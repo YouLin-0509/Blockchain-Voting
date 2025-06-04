@@ -1,130 +1,221 @@
-import { useState } from 'react';
-import { useAccount } from 'wagmi';
-import { useMockBlockchain } from '../contexts/MockBlockchainContext'; // Import the hook
+import React, { useState } from 'react';
+import { useAccount, useContractWrite, usePrepareContractWrite, useContractRead } from 'wagmi';
+import { CONTRACT_ADDRESSES, CONTRACT_ABIS, CONTRACT_OWNER, NETWORK_INFO } from '../config/contracts';
 
-function AdminPanel() {
-  const { address, isConnected } = useAccount();
-  const {
-    closeRegistration,
-    dispatchMPC,
-    publishResult,
-    isOwner,
-    owner,
-    registrationClosed,
-    taskSpecCID,
-    encryptedSigma,
-    encryptedSortedBallots,
-    getRegisteredVotersCount
-  } = useMockBlockchain();
+const AdminPanel = () => {
+  const { address } = useAccount();
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [isRedeploying, setIsRedeploying] = useState(false);
 
-  const [adminStatus, setAdminStatus] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [currentAction, setCurrentAction] = useState(''); // For action-specific loading text
+  // 檢查是否是合約擁有者
+  const isOwner = address?.toLowerCase() === CONTRACT_OWNER.toLowerCase();
 
-  const [numCandidates, setNumCandidates] = useState(2);
-  const [mockSigma, setMockSigma] = useState('mockEncSigma-final-123');
-  const [mockSorted, setMockSorted] = useState('mockEncSorted-final-abc');
+  // 讀取註冊狀態
+  const { data: isRegistrationOpen, refetch: refetchRegistrationStatus } = useContractRead({
+    address: CONTRACT_ADDRESSES.MANAGEMENT,
+    abi: CONTRACT_ABIS.MANAGEMENT,
+    functionName: 'isRegistrationOpen',
+    enabled: !!address && isOwner,
+  });
 
-  const iAmOwner = address && isOwner(address);
+  // 讀取已註冊選民數量
+  const { data: votersCount, refetch: refetchVotersCount } = useContractRead({
+    address: CONTRACT_ADDRESSES.MANAGEMENT,
+    abi: CONTRACT_ABIS.MANAGEMENT,
+    functionName: 'getRegisteredVotersCount',
+    enabled: !!address && isOwner,
+  });
 
-  const handleAdminAction = async (actionName, actionFn, ...args) => {
-    if (!isConnected || !address) {
-      setAdminStatus('Error: Please connect your wallet.');
-      return;
+  // 準備關閉註冊交易
+  const { config: closeRegistrationConfig } = usePrepareContractWrite({
+    address: CONTRACT_ADDRESSES.MANAGEMENT,
+    abi: CONTRACT_ABIS.MANAGEMENT,
+    functionName: 'closeRegistration',
+    enabled: !!address && isOwner && isRegistrationOpen,
+  });
+
+  // 執行關閉註冊交易
+  const { 
+    write: closeRegistration, 
+    isLoading: isClosing 
+  } = useContractWrite({
+    ...closeRegistrationConfig,
+    onSuccess: () => {
+      setSuccessMessage('註冊已關閉！');
+      refetchRegistrationStatus();
+      refetchVotersCount();
+    },
+    onError: (error) => {
+      console.error('關閉註冊失敗:', error);
+      setError(error.message || '關閉註冊失敗');
     }
-    if (!iAmOwner) {
-      setAdminStatus('Error: You are not authorized to perform admin actions.');
-      return;
+  });
+
+  // 準備派發MPC交易
+  const { config: dispatchMPCConfig } = usePrepareContractWrite({
+    address: CONTRACT_ADDRESSES.MANAGEMENT,
+    abi: CONTRACT_ABIS.MANAGEMENT,
+    functionName: 'dispatchMPC',
+    args: [votersCount || 0, 3], // 假設有3個候選人
+    enabled: !!address && isOwner && !isRegistrationOpen && votersCount,
+  });
+
+  // 執行派發MPC交易
+  const { 
+    write: dispatchMPC, 
+    isLoading: isDispatching 
+  } = useContractWrite({
+    ...dispatchMPCConfig,
+    onSuccess: () => {
+      setSuccessMessage('MPC 任務已派發！');
+    },
+    onError: (error) => {
+      console.error('派發MPC失敗:', error);
+      setError(error.message || '派發MPC失敗');
     }
+  });
 
-    setIsProcessing(true);
-    setCurrentAction(actionName); // Set current action for specific loading text
-    setAdminStatus(`Processing: ${actionName}...`);
-
+  const handleCloseRegistration = async () => {
     try {
-      const result = await new Promise(resolve => setTimeout(() => resolve(actionFn(address, ...args)), 1000));
-      setAdminStatus(`Success! '${actionName}' complete. ${result ? `Details: ${JSON.stringify(result)}` : ''} (Mocked)`);
-      console.log(`Mock admin action '${actionName}' successful:`, result);
-    } catch (error) {
-      console.error(`Mock admin action '${actionName}' error:`, error);
-      setAdminStatus(`Failed: ${actionName} - ${error.message} (Mocked)`);
-    } finally {
-      setIsProcessing(false);
-      setCurrentAction(''); // Reset current action
+      setError('');
+      setSuccessMessage('');
+      await closeRegistration?.();
+    } catch (err) {
+      setError(err.message || '關閉註冊失敗');
     }
   };
 
-  if (!isConnected) {
-    return <p>Connect your wallet to see admin options.</p>;
-  }
-  if (!iAmOwner) {
-    return <p>Admin panel is restricted to the owner. Current Mock Owner: <strong>{owner}</strong></p>;
+  const handleDispatchMPC = async () => {
+    try {
+      setError('');
+      setSuccessMessage('');
+      await dispatchMPC?.();
+    } catch (err) {
+      setError(err.message || '派發MPC失敗');
+    }
+  };
+
+  // 網頁端重新部署功能
+  const handleRedeploy = async () => {
+    if (!window.confirm('⚠️ 重新部署將重置所有資料，確定要繼續嗎？')) {
+      return;
+    }
+
+    try {
+      setIsRedeploying(true);
+      setError('');
+      setSuccessMessage('');
+
+      // 調用後端重新部署API
+      const response = await fetch('/api/redeploy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requestedBy: address
+        })
+      });
+
+      if (response.ok) {
+        setSuccessMessage('🔄 重新部署已啟動！請等待約30秒後刷新頁面。');
+        
+        // 輪詢檢查部署狀態
+        const checkDeploymentStatus = setInterval(async () => {
+          try {
+            const statusResponse = await fetch('/deployment-status.json');
+            if (statusResponse.ok) {
+              const status = await statusResponse.json();
+              if (status.isDeployed && status.lastDeployment) {
+                const deploymentTime = new Date(status.lastDeployment);
+                const now = new Date();
+                if (now - deploymentTime < 60000) { // 最近1分鐘內部署的
+                  clearInterval(checkDeploymentStatus);
+                  setSuccessMessage('✅ 重新部署完成！正在重新載入頁面...');
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 2000);
+                }
+              }
+            }
+          } catch (err) {
+            console.log('檢查部署狀態時出錯:', err);
+          }
+        }, 3000);
+
+        // 30秒後停止輪詢
+        setTimeout(() => {
+          clearInterval(checkDeploymentStatus);
+          if (isRedeploying) {
+            setIsRedeploying(false);
+            setSuccessMessage('部署可能需要更長時間，請手動刷新頁面檢查。');
+          }
+        }, 30000);
+
+      } else {
+        throw new Error('重新部署請求失敗');
+      }
+    } catch (err) {
+      setError('重新部署失敗: ' + err.message);
+      setIsRedeploying(false);
+    }
+  };
+
+  if (!isOwner) {
+    return <p>您不是合約擁有者，無法訪問管理面板。</p>;
   }
 
   return (
-    <div>
-      <h3>Admin Panel (Mock Owner: {owner})</h3>
-      <p>Your Address: <strong>{address}</strong> {iAmOwner ? <span style={{color: "green"}}>(You ARE Owner)</span> : <span style={{color: "red"}}>(You are NOT Owner)</span>}</p>
-
-      <div style={{ margin: '15px 0', padding: '10px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#f9f9f9' }}>
-        <h4>1. Registration Control</h4>
-        <button
-          onClick={() => handleAdminAction('Close Registration', closeRegistration)}
-          disabled={isProcessing || registrationClosed}
-        >
-          {isProcessing && currentAction === 'Close Registration' ? 'Processing: Closing...' : (registrationClosed ? 'Registration IS CLOSED' : 'Close Registration')}
-        </button>
-        {registrationClosed
-            ? <small style={{marginLeft: '10px', color: 'green', fontWeight: 'bold'}}> (Status: Closed - Total Registered: {getRegisteredVotersCount()})</small>
-            : <small style={{marginLeft: '10px', color: 'blue', fontWeight: 'bold'}}> (Status: Open)</small>}
+    <div className="admin-panel">
+      <h2>管理面板</h2>
+      
+      <div className="admin-info">
+        <p>已註冊選民數量: {votersCount?.toString() || '0'}</p>
+        <p>註冊狀態: {isRegistrationOpen ? '開放中' : '已關閉'}</p>
+        <p>合約擁有者: {CONTRACT_OWNER}</p>
+        <p>部署網路: {NETWORK_INFO.name}</p>
+        <p>部署時間: {new Date(NETWORK_INFO.deployedAt).toLocaleString()}</p>
       </div>
-
-      <div style={{ margin: '15px 0', padding: '10px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#f9f9f9' }}>
-        <h4>2. MPC Dispatch Control</h4>
-        <label htmlFor="numCandidates">Number of Candidates: </label>
-        <input
-          id="numCandidates"
-          type="number"
-          value={numCandidates}
-          onChange={e => setNumCandidates(parseInt(e.target.value))}
-          style={{width: "50px", marginLeft:"5px", marginRight:"10px"}}
-          disabled={isProcessing || !registrationClosed || !!taskSpecCID}
-        />
-        <button
-          onClick={() => handleAdminAction('Dispatch MPC Task', dispatchMPC, getRegisteredVotersCount(), numCandidates)}
-          disabled={isProcessing || !registrationClosed || !!taskSpecCID}
-        >
-          {isProcessing && currentAction === 'Dispatch MPC Task' ? 'Processing: Dispatching...' : (taskSpecCID ? 'MPC Task IS DISPATCHED' : 'Dispatch MPC Task')}
-        </button>
-        {!registrationClosed && <small style={{display: 'block', color: '#e85600', marginTop: '5px'}}>Note: Registration must be closed before dispatching MPC.</small>}
-        {registrationClosed && taskSpecCID && <small style={{marginLeft: '10px', color: 'green', fontWeight: 'bold'}}> (Status: Dispatched - Task CID: {taskSpecCID})</small>}
-        {registrationClosed && !taskSpecCID && <small style={{marginLeft: '10px', color: 'blue', fontWeight: 'bold'}}> (Status: Ready to Dispatch)</small>}
-      </div>
-
-      <div style={{ margin: '15px 0', padding: '10px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#f9f9f9' }}>
-        <h4>3. Result Publishing Control</h4>
-        <div>
-            <label htmlFor="mockSigma">Mock Encrypted Sigma: </label>
-            <input id="mockSigma" type="text" value={mockSigma} onChange={e=>setMockSigma(e.target.value)} style={{marginRight:"10px", marginBottom: '5px', width: '250px'}} disabled={isProcessing || !taskSpecCID || !!encryptedSigma}/>
+      
+      <div className="admin-actions">
+        <div className="action-section">
+          <h3>關閉註冊</h3>
+          <button 
+            onClick={handleCloseRegistration}
+            disabled={isClosing || !isRegistrationOpen || !closeRegistration}
+          >
+            {isClosing ? '處理中...' : '關閉註冊'}
+          </button>
         </div>
-        <div>
-            <label htmlFor="mockSorted">Mock Encrypted Sorted List: </label>
-            <input id="mockSorted" type="text" value={mockSorted} onChange={e=>setMockSorted(e.target.value)} style={{marginRight:"10px", marginBottom: '10px', width: '250px'}} disabled={isProcessing || !taskSpecCID || !!encryptedSigma}/>
+
+        <div className="action-section">
+          <h3>派發 MPC 任務</h3>
+          <button 
+            onClick={handleDispatchMPC}
+            disabled={isDispatching || isRegistrationOpen || !dispatchMPC}
+          >
+            {isDispatching ? '處理中...' : '派發 MPC 任務'}
+          </button>
         </div>
-        <button
-          onClick={() => handleAdminAction('Publish Results', publishResult, mockSigma, mockSorted)}
-          disabled={isProcessing || !taskSpecCID || !!encryptedSigma}
-        >
-          {isProcessing && currentAction === 'Publish Results' ? 'Processing: Publishing...' : (encryptedSigma ? 'Results ARE PUBLISHED' : 'Publish Results')}
-        </button>
-        {!taskSpecCID && <small style={{display: 'block', color: '#e85600', marginTop: '5px'}}>Note: MPC Task must be dispatched before publishing results.</small>}
-        {taskSpecCID && encryptedSigma && <small style={{marginLeft: '10px', color: 'green', fontWeight: 'bold'}}> (Status: Published - Sigma: {encryptedSigma}, Sorted: {encryptedSortedBallots})</small>}
-        {taskSpecCID && !encryptedSigma && <small style={{marginLeft: '10px', color: 'blue', fontWeight: 'bold'}}> (Status: Ready to Publish)</small>}
+
+        <div className="action-section danger-section">
+          <h3>🔄 重新部署系統</h3>
+          <p className="warning-text">⚠️ 此操作將重置所有資料並重新啟動區塊鏈</p>
+          <button 
+            onClick={handleRedeploy}
+            disabled={isRedeploying}
+            className="redeploy-btn"
+          >
+            {isRedeploying ? '🔄 部署中...' : '🔄 一鍵重新部署'}
+          </button>
+        </div>
       </div>
 
-      {adminStatus && <p style={{fontWeight: 'bold', padding: '10px', border: '1px solid #eee', borderRadius: '5px', backgroundColor: adminStatus.startsWith('Success!') ? '#e6ffed' : (adminStatus.startsWith('Failed:') || adminStatus.startsWith('Error:')) ? '#ffe6e6' : '#f0f0f0' }}>{adminStatus}</p>}
+      {error && <p className="error">{error}</p>}
+      {successMessage && <p className="success">{successMessage}</p>}
     </div>
   );
-}
+};
 
 export default AdminPanel;

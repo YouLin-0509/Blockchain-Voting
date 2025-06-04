@@ -1,131 +1,160 @@
-import { useState, useEffect } from 'react'; // Added useEffect
-import { useAccount } from 'wagmi';
-import { useMockBlockchain } from '../contexts/MockBlockchainContext'; // Import the hook
+import React, { useState, useEffect } from 'react';
+import { useAccount, useContractWrite, usePrepareContractWrite, useContractRead } from 'wagmi';
+import { CONTRACT_ADDRESSES, CONTRACT_ABIS, CONTRACT_OWNER } from '../config/contracts';
+import { ethers } from 'ethers';
 
-function Voting() {
-  const { address, isConnected } = useAccount();
-  const {
-    submitEncryptedBallot,
-    getSubmittedBallotCID,
-    getIsVoterRegistered, // Corrected from isRegistrationOpen which is not what we need here
-    registrationClosed, // Direct state access to determine if voting period might be open
-    encryptedSigma // To check if results are published
-  } = useMockBlockchain();
+const Voting = () => {
+  const { address } = useAccount();
+  const [selectedCandidate, setSelectedCandidate] = useState('');
+  const [error, setError] = useState('');
+  const [justVoted, setJustVoted] = useState(false);
 
-  const [isVoting, setIsVoting] = useState(false);
-  const [votingStatus, setVotingStatus] = useState('');
-  const [ballotCID, setBallotCID] = useState('');
-  const [veRangeProof, setVeRangeProof] = useState('');
-  const [testFailProof, setTestFailProof] = useState(false); // For testing failure path
+  const candidates = ['候選人A', '候選人B', '候選人C'];
 
-  // State for UI based on blockchain mock state
-  const [canVote, setCanVote] = useState(false);
-  const [voteMessage, setVoteMessage] = useState('');
-  const [userSubmittedCID, setUserSubmittedCID] = useState(null);
+  // 檢查用戶是否已投票
+  const { data: hasVoted, refetch: refetchVoteStatus } = useContractRead({
+    address: CONTRACT_ADDRESSES.COUNTING,
+    abi: CONTRACT_ABIS.COUNTING,
+    functionName: 'submittedBallots',
+    args: [address],
+    enabled: !!address,
+    blockTag: 'latest',
+    staleTime: 1000,
+  });
 
-  // Function to generate dummy data
-  const generateDummyData = (failProof = false) => {
-    setBallotCID(`mockCID-${Date.now().toString(36)}`);
-    if (failProof) {
-      setVeRangeProof("0xfail"); // Specific value to trigger mock failure in context
-    } else {
-      setVeRangeProof(`mockProof-${Math.random().toString(36).substring(2)}`);
+  // 檢查用戶是否已註冊
+  const { data: isRegistered } = useContractRead({
+    address: CONTRACT_ADDRESSES.MANAGEMENT,
+    abi: CONTRACT_ABIS.MANAGEMENT,
+    functionName: 'isVoterRegistered',
+    args: [address],
+    enabled: !!address,
+    blockTag: 'latest',
+    staleTime: 1000,
+  });
+
+  // 準備投票交易
+  const { config: voteConfig } = usePrepareContractWrite({
+    address: CONTRACT_ADDRESSES.COUNTING,
+    abi: CONTRACT_ABIS.COUNTING,
+    functionName: 'submitBallot',
+    args: [
+      ethers.encodeBytes32String(selectedCandidate), // 將候選人名稱轉換為 bytes32
+      '0x00' // 簡化版本，使用空的證明
+    ],
+    enabled: !!address && !!selectedCandidate && isRegistered && !hasVoted,
+  });
+
+  // 執行投票交易
+  const { 
+    write: submitVote, 
+    isLoading: isVoting,
+    isSuccess: voteSuccess
+  } = useContractWrite({
+    ...voteConfig,
+    onSuccess: () => {
+      setJustVoted(true);
+      setTimeout(() => {
+        refetchVoteStatus();
+      }, 2000);
+    },
+    onError: (error) => {
+      console.error('投票失敗:', error);
+      setError(error.message || '投票失敗');
     }
-    setTestFailProof(failProof);
-  };
+  });
 
-  // Generate dummy data on component mount
-  useEffect(() => {
-    generateDummyData();
-  }, []);
-
-  useEffect(() => {
-    if (!isConnected || !address) {
-      setCanVote(false);
-      setVoteMessage('Please connect your wallet to cast your vote.');
-      setUserSubmittedCID(null);
+  const handleVote = async () => {
+    if (!selectedCandidate) {
+      setError('請選擇候選人');
       return;
     }
 
-    const registered = getIsVoterRegistered(address);
-    const votedCID = getSubmittedBallotCID(address);
-    setUserSubmittedCID(votedCID);
-
-    if (!registered) {
-      setCanVote(false);
-      setVoteMessage('Not Registered: You must be registered to vote. Please use the registration panel.');
-    } else if (votedCID) {
-      setCanVote(false);
-      setVoteMessage(`Already Voted: Your vote with CID ${votedCID} has been recorded.`);
-    } else if (!registrationClosed) {
-      setCanVote(false);
-      setVoteMessage('Voting Not Open: Registration period is not yet closed.');
-    } else if (registrationClosed && encryptedSigma) { // If registration is closed AND results are published
-        setCanVote(false);
-        setVoteMessage('Voting Concluded: Results have been published.');
-    }
-    else if (registrationClosed && !encryptedSigma) { // Registration closed, results not yet published
-      setCanVote(true);
-      setVoteMessage('Eligible to Vote: Please submit your generated ballot data.');
-    } else {
-      setCanVote(false); // Default catch-all
-      setVoteMessage('Voting status cannot be determined. Please check contract state.');
-    }
-  }, [address, isConnected, getIsVoterRegistered, getSubmittedBallotCID, registrationClosed, encryptedSigma]);
-
-
-  const handleSubmitVote = async () => {
-    if (!canVote || !ballotCID || !veRangeProof) {
-      setVotingStatus('Error: Cannot submit vote. Conditions not met or data missing.');
+    if (!isRegistered) {
+      setError('您尚未註冊為選民');
       return;
     }
 
-    setIsVoting(true);
-    setVotingStatus('Processing: Submitting your vote...');
+    if (hasVoted) {
+      setError('您已經投過票了');
+      return;
+    }
 
     try {
-      const result = await new Promise(resolve => setTimeout(() => resolve(submitEncryptedBallot(address, ballotCID, veRangeProof)), 1000));
-      setVotingStatus(`Success! Vote submitted. CID: ${result.ballotCID} (Mocked)`);
-      console.log('Mock vote submission successful:', result);
-      setUserSubmittedCID(result.ballotCID); // Update UI immediately after mock success
-      setCanVote(false); // Prevent further voting
-    } catch (error) {
-      console.error('Mock voting error:', error);
-      setVotingStatus(`Failed: ${error.message} (Mocked)`);
-    } finally {
-      setIsVoting(false);
+      setError('');
+      await submitVote?.();
+    } catch (err) {
+      setError(err.message || '投票失敗');
     }
   };
 
-  if (!isConnected) {
-    return <p>{voteMessage}</p>; // voteMessage already set by useEffect
-  }
+  // 當地址變化時重置狀態
+  useEffect(() => {
+    setJustVoted(false);
+    setError('');
+    setSelectedCandidate('');
+  }, [address]);
+
+  // 當投票成功時重置 justVoted 狀態（延遲執行）
+  useEffect(() => {
+    if (voteSuccess && justVoted) {
+      const timer = setTimeout(() => {
+        setJustVoted(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [voteSuccess, justVoted]);
+
+  const isOwner = address?.toLowerCase() === CONTRACT_OWNER.toLowerCase();
 
   return (
-    <div>
-      <h3>Cast Your Vote</h3>
-      <p style={{ fontWeight: canVote ? 'normal' : 'bold', color: canVote ? 'green' : 'red' }}>{voteMessage}</p>
-      {userSubmittedCID && !canVote && ( // If already voted, show this instead of generate buttons
-         <p>Your submitted Ballot CID: <strong>{userSubmittedCID}</strong></p>
+    <div className="voting-container">
+      <h2>投票</h2>
+      
+      {!address ? (
+        <p>請先連接錢包</p>
+      ) : !isRegistered ? (
+        <p>您尚未註冊為選民，請先完成註冊</p>
+      ) : isOwner ? (
+        <div className="owner-dashboard">
+          <h3>📊 投票結果管理</h3>
+          <p>您是合約擁有者，可以查看投票統計</p>
+          {/* 這裡會在管理面板中顯示詳細的投票結果 */}
+        </div>
+      ) : hasVoted && !justVoted ? (
+        <div className="success-message">
+          <p>已投票</p>
+        </div>
+      ) : (
+        <div>
+          <label htmlFor="candidate-select">選擇候選人：</label>
+          <select
+            id="candidate-select"
+            value={selectedCandidate}
+            onChange={(e) => setSelectedCandidate(e.target.value)}
+            disabled={isVoting}
+          >
+            <option value="">請選擇候選人</option>
+            {candidates.map(candidate => (
+              <option key={candidate} value={candidate}>
+                {candidate}
+              </option>
+            ))}
+          </select>
+          
+          <button 
+            onClick={handleVote}
+            disabled={!selectedCandidate || isVoting || !submitVote}
+          >
+            {isVoting ? '投票中...' : '投票'}
+          </button>
+          
+          {justVoted && <p className="success">投票成功！</p>}
+          {error && <p className="error">{error}</p>}
+        </div>
       )}
-      {canVote && isConnected && (
-        <>
-          <p>Generated Ballot IPFS CID (mock): <strong>{ballotCID}</strong></p>
-          <p>Generated VeRange Proof (mock): <strong style={{color: testFailProof ? 'red' : 'inherit'}}>{veRangeProof}</strong></p>
-          <button onClick={() => generateDummyData(false)} style={{marginRight: '10px'}} disabled={isVoting}>
-            Regenerate Valid Dummy Data
-          </button>
-          <button onClick={() => generateDummyData(true)} style={{marginRight: '10px', color: 'red'}} disabled={isVoting}>
-            Regenerate Invalid Dummy Proof (for testing failure)
-          </button>
-          <button onClick={handleSubmitVote} disabled={isVoting || !canVote}>
-            {isVoting ? 'Processing: Submitting...' : 'Submit Vote'}
-          </button>
-        </>
-      )}
-      {votingStatus && <p><strong>Status:</strong> {votingStatus}</p>}
     </div>
   );
-}
+};
 
 export default Voting;

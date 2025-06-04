@@ -1,35 +1,497 @@
 .App {
   text-align: center;
-  font-family: sans-serif;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
 }
 
 .App-header {
-  background-color: #282c34;
-  padding: 20px;
-  color: white;
-  margin-bottom: 30px;
+  background: #2d3a4b;
+  color: #fff;
+  padding: 1.5rem 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .App-header h1 {
   margin: 0;
+  margin-bottom: 1rem;
 }
 
-/* Add this to ensure ConnectKitButton is on the right */
-.App-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* 合約擁有者信息樣式 */
+.contract-owner-info {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
 }
 
+.contract-owner-info p {
+  margin: 0;
+  color: #e0e0e0;
+}
 
-section {
-  margin: 20px auto;
-  padding: 20px;
-  border: 1px solid #ddd;
+/* 錢包狀態樣式 */
+.wallet-status {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
   border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem auto;
+  text-align: center;
   max-width: 600px;
 }
 
-h2 {
+.wallet-status p {
+  margin: 0.5rem 0;
+  font-weight: 500;
+  color: #495057;
+  word-break: break-all;
+}
+
+/* 擁有者徽章樣式 */
+.owner-badge {
+  color: #28a745 !important;
+  font-weight: bold !important;
+  background: #d4edda;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+  margin: 0.5rem 0 !important;
+}
+
+/* 按鈕樣式 */
+.connect-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin: 0.25rem 0.5rem 0.25rem 0;
+  transition: background 0.2s;
+}
+
+.connect-btn:hover {
+  background: #0056b3;
+}
+
+.connect-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.owner-login-btn {
+  background: #ffc107;
+  color: #212529;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin: 0.25rem 0.5rem 0.25rem 0;
+  transition: background 0.2s;
+}
+
+.owner-login-btn:hover {
+  background: #e0a800;
+}
+
+.disconnect-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin: 0.25rem 0.5rem 0.25rem 0;
+  transition: background 0.2s;
+}
+
+.disconnect-btn:hover {
+  background: #c82333;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.section {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.section h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
   color: #333;
+  font-size: 1.5rem;
+}
+
+/* 註冊容器置中 */
+.registration-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* 投票容器置中 */
+.voting-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* 成功和錯誤消息置中 */
+.success,
+.success-message {
+  color: #28a745;
+  margin: 1rem auto;
+  padding: 1rem;
+  background-color: #d4edda;
+  border-radius: 4px;
+  max-width: 500px;
+  text-align: center;
+}
+
+.error {
+  color: #dc3545;
+  margin: 1rem auto;
+  padding: 1rem;
+  background-color: #f8d7da;
+  border-radius: 4px;
+  max-width: 500px;
+  text-align: center;
+}
+
+/* 按鈕樣式 */
+button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+  margin: 0.5rem;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* 表單元素樣式 */
+select {
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  margin: 10px;
+  min-width: 200px;
+  font-size: 16px;
+}
+
+/* 管理面板樣式 */
+.admin-panel {
+  padding: 2rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.admin-info {
+  background-color: #f5f5f5;
+  padding: 1.5rem;
+  border-radius: 6px;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.admin-info p {
+  margin: 8px 0;
+  font-family: monospace;
+}
+
+.admin-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.action-section {
+  padding: 1.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background-color: #fafafa;
+  width: 100%;
+  max-width: 600px;
+  text-align: center;
+}
+
+.action-section h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.action-section button {
+  padding: 12px 24px;
+  font-size: 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.action-section button:not(.redeploy-btn) {
+  background-color: #007bff;
+  color: white;
+}
+
+.action-section button:not(.redeploy-btn):hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.action-section button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* 危險操作區域樣式 */
+.danger-section {
+  border-color: #dc3545;
+  background-color: #fff5f5;
+}
+
+.danger-section h3 {
+  color: #dc3545;
+}
+
+.warning-text {
+  color: #dc3545;
+  font-weight: bold;
+  margin: 1rem 0;
+  font-size: 14px;
+  text-align: center;
+}
+
+.redeploy-btn {
+  background-color: #dc3545 !important;
+  color: white !important;
+  font-weight: bold;
+  padding: 12px 24px;
+  font-size: 16px;
+}
+
+.redeploy-btn:hover:not(:disabled) {
+  background-color: #c82333 !important;
+}
+
+.redeploy-btn:disabled {
+  background-color: #6c757d !important;
+  cursor: not-allowed;
+}
+
+.ConnectWallet {
+  margin: 1rem auto;
+  text-align: center;
+}
+
+.ConnectWallet button {
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.ConnectWallet button:hover {
+  background: #45a049;
+}
+
+.ConnectWallet button:disabled {
+  background: #aaa;
+  cursor: not-allowed;
+}
+
+.ConnectWallet p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+/* 投票結果管理樣式 */
+.owner-dashboard {
+  text-align: center;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem auto;
+  max-width: 800px;
+}
+
+.dashboard-controls {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.refresh-btn {
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.refresh-btn:hover {
+  background: #138496;
+}
+
+.refresh-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.vote-results {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.vote-results h3 {
+  margin-top: 0;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+  padding-bottom: 0.5rem;
+}
+
+.results-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  align-items: center;
+}
+
+.result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 6px;
+  border-left: 4px solid #007bff;
+  width: 100%;
+  max-width: 400px;
+}
+
+.candidate-name {
+  font-weight: 500;
+  color: #495057;
+}
+
+.vote-count {
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: #007bff;
+}
+
+.result-summary {
+  background: #e9ecef;
+  padding: 1rem;
+  border-radius: 6px;
+  text-align: center;
+  border-left: 4px solid #28a745;
+  margin: 1rem auto;
+  max-width: 400px;
+}
+
+.last-updated {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #6c757d;
+  text-align: center;
+  font-style: italic;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem 10px;
+  }
+  
+  .section {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .admin-actions {
+    gap: 1.5rem;
+  }
+  
+  .wallet-status p {
+    font-size: 0.8rem;
+  }
+  
+  .contract-owner-info {
+    font-size: 0.8rem;
+  }
+  
+  .result-item {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+  
+  .refresh-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  button {
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+  
+  .action-section {
+    padding: 1rem;
+  }
 }

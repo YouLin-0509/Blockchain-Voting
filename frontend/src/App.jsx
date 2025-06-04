@@ -1,52 +1,93 @@
-import './App.css';
-import { WagmiConfig, createConfig } from 'wagmi'; // Keep wagmi for wallet connect
-import { ConnectKitProvider, ConnectKitButton, getDefaultConfig } from 'connectkit';
-import { sepolia, mainnet, hardhat } from 'wagmi/chains';
-
+import React from 'react';
+import { WagmiConfig, createConfig, configureChains, mainnet } from 'wagmi';
+import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
+import { MetaMaskConnector } from 'wagmi/connectors/metaMask';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { CONTRACT_OWNER } from './config/contracts';
 import Registration from './components/Registration';
 import Voting from './components/Voting';
 import AdminPanel from './components/AdminPanel';
+import './App.css';
 
-// Import the provider
-import { MockBlockchainProvider } from './contexts/MockBlockchainContext';
+// 自定義 hardhat 鏈
+const hardhatChain = {
+  id: 31337,
+  name: 'Hardhat',
+  network: 'hardhat',
+  nativeCurrency: {
+    name: 'Ether',
+    symbol: 'ETH',
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: { http: ['http://127.0.0.1:8545'] },
+    public: { http: ['http://127.0.0.1:8545'] },
+  },
+  blockExplorers: {
+    default: { name: 'Etherscan', url: 'https://etherscan.io' },
+  },
+  testnet: true,
+};
 
-const walletConnectProjectId = 'YOUR_WALLETCONNECT_PROJECT_ID';
-
-const chains = [hardhat, sepolia, mainnet];
-
-const config = createConfig(
-  getDefaultConfig({
-    appName: 'Blockchain E-Voting DApp',
-    walletConnectProjectId,
-    chains,
-  })
+// 配置 wagmi
+const { chains, publicClient } = configureChains(
+  [hardhatChain],
+  [
+    jsonRpcProvider({
+      rpc: (chain) => {
+        if (chain.id === hardhatChain.id) {
+          return { http: chain.rpcUrls.default.http[0] };
+        }
+        return null; // 理論上不應該執行到這裡，因為只有 hardhatChain
+      },
+    }),
+  ]
 );
+
+const config = createConfig({
+  autoConnect: true,
+  publicClient,
+  connectors: [
+    new MetaMaskConnector({ chains })
+  ]
+});
+
+// 創建 React Query 客戶端
+const queryClient = new QueryClient();
 
 function App() {
   return (
-    <WagmiConfig config={config}> {/* Wagmi still needed for useAccount, ConnectKit */}
-      <ConnectKitProvider>
-        <MockBlockchainProvider> {/* Wrap main content with MockProvider */}
-          <div className="App">
-            <header className="App-header">
-              <h1>Blockchain E-Voting System (Mocked Backend)</h1>
-              <ConnectKitButton />
-            </header>
-            <main>
-              <section>
+    <WagmiConfig config={config}>
+      <QueryClientProvider client={queryClient}>
+        <div className="App">
+          <header className="App-header">
+            <h1>區塊鏈投票系統</h1>
+            <ContractOwnerInfo />
+          </header>
+          <main>
+            <div className="container">
+              <section className="section">
                 <Registration />
               </section>
-              <section>
+              <section className="section">
                 <Voting />
               </section>
-              <section>
+              <section className="section">
                 <AdminPanel />
               </section>
-            </main>
-          </div>
-        </MockBlockchainProvider>
-      </ConnectKitProvider>
+            </div>
+          </main>
+        </div>
+      </QueryClientProvider>
     </WagmiConfig>
+  );
+}
+
+function ContractOwnerInfo() {
+  return (
+    <div className="contract-owner-info">
+      <p>合約擁有者: {CONTRACT_OWNER}</p>
+    </div>
   );
 }
 

@@ -2,70 +2,59 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 describe("CountingContract", function () {
-  let CountingContract, countingContract, owner, addr1;
-  // let ManagementContract, managementContract; // For future integration tests
+  let countingContract;
+  let owner;
+  let voter;
 
   beforeEach(async function () {
-    [owner, addr1] = await ethers.getSigners();
+    // 獲取測試帳戶
+    [owner, voter] = await ethers.getSigners();
 
-    // Deploy ManagementContract if needed for setup (even if placeholder)
-    // const ManagementContractFactory = await ethers.getContractFactory("ManagementContract");
-    // managementContract = await ManagementContractFactory.deploy();
-    // await managementContract.waitForDeployment();
-
-    CountingContract = await ethers.getContractFactory("CountingContract");
-    // Pass managementContract.address if constructor requires it
-    // countingContract = await CountingContract.deploy(managementContract.address);
-    countingContract = await CountingContract.deploy(); // Assuming no constructor args for now
+    // 部署合約
+    const CountingContract = await ethers.getContractFactory("CountingContract");
+    countingContract = await CountingContract.deploy();
     await countingContract.waitForDeployment();
   });
 
   describe("submitEncryptedBallot", function () {
-    const dummyCID = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"; // 32 bytes
-    const dummyProof = "0xproof";
-
     it("Should allow a user to submit an encrypted ballot and emit BallotAccepted event", async function () {
-      // For now, direct call. Later, integrate with ManagementContract for voter eligibility.
-      // Example: Register voter in ManagementContract first
-      // await managementContract.connect(addr1).register("0x", "0x");
-      // await managementContract.connect(owner).closeRegistration();
-      // Then set managementContractAddress in CountingContract if needed.
+      const ballotCID = ethers.encodeBytes32String("QmTestBallotCID123");
+      const veRangeProof = ethers.encodeBytes32String("0xTestProof123");
 
-      await expect(countingContract.connect(addr1).submitEncryptedBallot(dummyCID, dummyProof))
-        .to.emit(countingContract, "BallotAccepted")
-        .withArgs(addr1.address, dummyCID);
+      const tx = await countingContract.connect(voter).submitEncryptedBallot(ballotCID, veRangeProof);
+      const receipt = await tx.wait();
 
-      expect(await countingContract.submittedBallots(addr1.address)).to.equal(dummyCID);
+      // 驗證事件
+      const event = receipt.logs.find(log => log.fragment && log.fragment.name === 'BallotAccepted');
+      expect(event).to.not.be.undefined;
+      expect(event.args[0]).to.equal(voter.address);
+      expect(event.args[1]).to.equal(ballotCID);
+
+      // 驗證選票是否被正確記錄
+      const storedBallotCID = await countingContract.submittedBallots(voter.address);
+      expect(storedBallotCID).to.equal(ballotCID);
     });
 
-    it("Should revert if VeRange proof verification fails (mocked)", async function () {
-      // This test requires modifying the contract to make verifyVeRange return false.
-      // For now, our placeholder verifyVeRange always returns true.
-      // If we had a way to mock it from the test or a setter in contract:
-      // await countingContract.setVeRangeVerificationResult(false); // Hypothetical
-      // await expect(countingContract.connect(addr1).submitEncryptedBallot(dummyCID, dummyProof))
-      // .to.be.revertedWith("VeRange proof verification failed");
-      // This test is more of a placeholder until VeRange is implemented.
-      // For now, we can't directly test the false path of verifyVeRange with current contract.
-      // We can test the revert if "Ballot already submitted"
-       await countingContract.connect(addr1).submitEncryptedBallot(dummyCID, dummyProof);
-       await expect(countingContract.connect(addr1).submitEncryptedBallot(dummyCID, dummyProof))
-        .to.be.revertedWith("Ballot already submitted for this address");
-    });
+    it("Should not allow a user to submit multiple ballots", async function () {
+      const ballotCID1 = ethers.encodeBytes32String("QmTestBallotCID123");
+      const ballotCID2 = ethers.encodeBytes32String("QmTestBallotCID456");
+      const veRangeProof = ethers.encodeBytes32String("0xTestProof123");
 
-     it("Should not allow submitting a ballot twice from the same address", async function () {
-      await countingContract.connect(addr1).submitEncryptedBallot(dummyCID, dummyProof);
-      await expect(countingContract.connect(addr1).submitEncryptedBallot(dummyCID, dummyProof))
-        .to.be.revertedWith("Ballot already submitted for this address");
+      // 提交第一張選票
+      await countingContract.connect(voter).submitEncryptedBallot(ballotCID1, veRangeProof);
+
+      // 嘗試提交第二張選票應該失敗
+      await expect(
+        countingContract.connect(voter).submitEncryptedBallot(ballotCID2, veRangeProof)
+      ).to.be.revertedWith("Ballot already submitted for this address");
     });
   });
 
   describe("publishResult", function () {
-    const encSigma = "0xsigma";
-    const encSorted = "0xsorted";
+    const encSigma = ethers.encodeBytes32String("0xsigma");
+    const encSorted = ethers.encodeBytes32String("0xsorted");
 
     it("Should allow publishing results and emit ResultPublished event", async function () {
-      // In a real scenario, this would be restricted (e.g., by MPC node address or owner)
       await expect(countingContract.connect(owner).publishResult(encSigma, encSorted))
         .to.emit(countingContract, "ResultPublished")
         .withArgs(encSigma, encSorted);

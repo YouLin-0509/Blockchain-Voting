@@ -36,6 +36,10 @@ contract ManagementContract is Ownable {
 
     // --- Functions ---
 
+    constructor() Ownable(msg.sender) {
+        // 初始化合約
+    }
+
     /**
      * @notice Registers a new voter.
      * @dev Simplified version for now. Ring signature and pkSet are placeholders.
