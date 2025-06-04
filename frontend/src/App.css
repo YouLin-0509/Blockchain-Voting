@@ -1,0 +1,35 @@
+.App {
+  text-align: center;
+  font-family: sans-serif;
+}
+
+.App-header {
+  background-color: #282c34;
+  padding: 20px;
+  color: white;
+  margin-bottom: 30px;
+}
+
+.App-header h1 {
+  margin: 0;
+}
+
+/* Add this to ensure ConnectKitButton is on the right */
+.App-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+
+section {
+  margin: 20px auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  max-width: 600px;
+}
+
+h2 {
+  color: #333;
+}
