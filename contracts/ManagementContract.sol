@@ -4,6 +4,7 @@ pragma solidity ^0.8.22;
 import "@openzeppelin/contracts/access/Ownable.sol"; // For owner-restricted functions
 
 contract ManagementContract is Ownable {
+    constructor() Ownable(msg.sender) {}
 
     // --- Events ---
     event Registered(address indexed voterAddress, uint256 voterId);
