@@ -1,21 +1,21 @@
+/* global BigInt */
 import React, { useState, useEffect } from 'react';
 import { useAccount, useContractWrite, usePrepareContractWrite, useContractRead } from 'wagmi';
 import { CONTRACT_ADDRESSES, CONTRACT_ABIS, CONTRACT_OWNER } from '../config/contracts';
-import { ethers } from 'ethers';
 
 const Voting = () => {
   const { address } = useAccount();
-  const [selectedCandidate, setSelectedCandidate] = useState('');
+  const [selectedCandidateId, setSelectedCandidateId] = useState('');
   const [error, setError] = useState('');
   const [justVoted, setJustVoted] = useState(false);
 
   const candidates = ['候選人A', '候選人B', '候選人C'];
 
   // 檢查用戶是否已投票
-  const { data: submittedBallotCID, refetch: refetchVoteStatus } = useContractRead({
+  const { data: userHasVoted, refetch: refetchVoteStatus } = useContractRead({
     address: CONTRACT_ADDRESSES.COUNTING,
     abi: CONTRACT_ABIS.COUNTING,
-    functionName: 'submittedBallots',
+    functionName: 'getHasVoted',
     args: [address],
     enabled: !!address,
     blockTag: 'latest',
@@ -23,7 +23,7 @@ const Voting = () => {
   });
 
   // 判斷用戶是否真的投過票
-  const userHasActuallyVoted = submittedBallotCID !== undefined && submittedBallotCID !== ethers.ZeroHash;
+  const userHasActuallyVoted = userHasVoted === true;
 
   // 檢查用戶是否已註冊
   const { data: isRegistered } = useContractRead({
@@ -40,12 +40,11 @@ const Voting = () => {
   const { config: voteConfig } = usePrepareContractWrite({
     address: CONTRACT_ADDRESSES.COUNTING,
     abi: CONTRACT_ABIS.COUNTING,
-    functionName: 'submitEncryptedBallot',
+    functionName: 'submitVote',
     args: [
-      selectedCandidate ? ethers.encodeBytes32String(selectedCandidate) : ethers.ZeroHash,
-      '0x00'
+      selectedCandidateId !== '' ? BigInt(selectedCandidateId) : undefined,
     ],
-    enabled: !!address && !!selectedCandidate && isRegistered && !userHasActuallyVoted,
+    enabled: !!address && selectedCandidateId !== '' && isRegistered && !userHasActuallyVoted,
   });
 
   // 執行投票交易
@@ -68,7 +67,7 @@ const Voting = () => {
   });
 
   const handleVote = async () => {
-    if (!selectedCandidate) {
+    if (selectedCandidateId === '') {
       setError('請選擇候選人');
       return;
     }
@@ -95,7 +94,7 @@ const Voting = () => {
   useEffect(() => {
     setJustVoted(false);
     setError('');
-    setSelectedCandidate('');
+    setSelectedCandidateId('');
   }, [address]);
 
   // 當投票成功時重置 justVoted 狀態（延遲執行）
@@ -126,47 +125,33 @@ const Voting = () => {
         </div>
       ) : userHasActuallyVoted && !justVoted ? (
         <div className="success-message">
-          <p>已投票</p>
-          {submittedBallotCID && submittedBallotCID !== ethers.ZeroHash && (
-            <p style={{ fontSize: '0.8em', color: '#aaa' }}>
-              您的選票 CID: {
-                (() => {
-                  try {
-                    return ethers.decodeBytes32String(submittedBallotCID);
-                  } catch (e) {
-                    // If decoding fails (e.g., it's not a valid string), display the raw CID
-                    return submittedBallotCID;
-                  }
-                })()
-              }
-            </p>
-          )}
+          <p>✅ 您已成功投票。</p>
         </div>
       ) : (
         <div>
           <label htmlFor="candidate-select">選擇候選人：</label>
           <select
             id="candidate-select"
-            value={selectedCandidate}
-            onChange={(e) => setSelectedCandidate(e.target.value)}
+            value={selectedCandidateId}
+            onChange={(e) => setSelectedCandidateId(e.target.value)}
             disabled={isVoting}
           >
             <option value="">請選擇候選人</option>
-            {candidates.map(candidate => (
-              <option key={candidate} value={candidate}>
-                {candidate}
+            {candidates.map((candidateName, index) => (
+              <option key={candidateName} value={index}>
+                {candidateName}
               </option>
             ))}
           </select>
           
           <button 
             onClick={handleVote}
-            disabled={!selectedCandidate || isVoting || !submitVote}
+            disabled={selectedCandidateId === '' || isVoting || !submitVote}
           >
             {isVoting ? '投票中...' : '投票'}
           </button>
           
-          {justVoted && <p className="success">投票成功！</p>}
+          {justVoted && <p className="success">🎉 投票成功！感謝您的參與。</p>}
           {error && <p className="error">{error}</p>}
         </div>
       )}
