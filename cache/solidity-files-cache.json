@@ -38,8 +38,8 @@
       ]
     },
     "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\ManagementContract.sol": {
-      "lastModificationDate": 1749043822093,
-      "contentHash": "5bdeb84ad64c4ea43f3f0ada6c74d675",
+      "lastModificationDate": 1749065470262,
+      "contentHash": "1364b939b6b62dc53b2b8f983ec32391",
       "sourceName": "contracts/ManagementContract.sol",
       "solcConfig": {
         "version": "0.8.22",

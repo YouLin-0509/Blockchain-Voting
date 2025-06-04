@@ -52,6 +52,7 @@ contract ManagementContract is Ownable {
         // bytes memory _ringSig = ringSig; // Keep compiler happy about unused var
         // bytes memory _pkSet = pkSet;     // Keep compiler happy about unused var
 
+        require(msg.sender != owner(), "Owner cannot register as a voter");
         require(!isVoterRegistered[msg.sender], "Voter already registered");
 
         isVoterRegistered[msg.sender] = true;

@@ -1,4 +1,4 @@
-// 自動生成 - 2025/6/5 上午1:39:41
+// 自動生成 - 2025/6/5 上午3:22:18
 // 導入 ABI (從 src/abis 目錄)
 import ManagementContractABI_JSON from '../abis/ManagementContract.json';
 import CountingContractABI_JSON from '../abis/CountingContract.json';
@@ -13,7 +13,7 @@ export const CONTRACT_OWNER = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 export const NETWORK_INFO = {
   name: "localhost",
   deployer: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  deployedAt: "2025-06-04T17:39:41.801Z"
+  deployedAt: "2025-06-04T19:22:18.758Z"
 };
 
 export const CONTRACT_ABIS = {

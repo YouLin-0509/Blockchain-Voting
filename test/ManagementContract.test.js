@@ -49,6 +49,15 @@ describe("ManagementContract", function () {
         )
       ).to.be.revertedWith("Registration is closed");
     });
+
+    it("Should not allow the contract owner to register as a voter", async function () {
+      const ringSig = ethers.encodeBytes32String("0xTestRingSigOwner");
+      const pkSet = ethers.encodeBytes32String("0xTestPKSetOwner");
+
+      await expect(
+        managementContract.connect(owner).register(ringSig, pkSet)
+      ).to.be.revertedWith("Owner cannot register as a voter");
+    });
   });
 
   describe("Registration Control", function () {

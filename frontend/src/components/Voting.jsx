@@ -12,7 +12,7 @@ const Voting = () => {
   const candidates = ['候選人A', '候選人B', '候選人C'];
 
   // 檢查用戶是否已投票
-  const { data: hasVoted, refetch: refetchVoteStatus } = useContractRead({
+  const { data: submittedBallotCID, refetch: refetchVoteStatus } = useContractRead({
     address: CONTRACT_ADDRESSES.COUNTING,
     abi: CONTRACT_ABIS.COUNTING,
     functionName: 'submittedBallots',
@@ -21,6 +21,9 @@ const Voting = () => {
     blockTag: 'latest',
     staleTime: 1000,
   });
+
+  // 判斷用戶是否真的投過票
+  const userHasActuallyVoted = submittedBallotCID !== undefined && submittedBallotCID !== ethers.ZeroHash;
 
   // 檢查用戶是否已註冊
   const { data: isRegistered } = useContractRead({
@@ -37,12 +40,12 @@ const Voting = () => {
   const { config: voteConfig } = usePrepareContractWrite({
     address: CONTRACT_ADDRESSES.COUNTING,
     abi: CONTRACT_ABIS.COUNTING,
-    functionName: 'submitBallot',
+    functionName: 'submitEncryptedBallot',
     args: [
-      ethers.encodeBytes32String(selectedCandidate), // 將候選人名稱轉換為 bytes32
-      '0x00' // 簡化版本，使用空的證明
+      selectedCandidate ? ethers.encodeBytes32String(selectedCandidate) : ethers.ZeroHash,
+      '0x00'
     ],
-    enabled: !!address && !!selectedCandidate && isRegistered && !hasVoted,
+    enabled: !!address && !!selectedCandidate && isRegistered && !userHasActuallyVoted,
   });
 
   // 執行投票交易
@@ -75,7 +78,7 @@ const Voting = () => {
       return;
     }
 
-    if (hasVoted) {
+    if (userHasActuallyVoted) {
       setError('您已經投過票了');
       return;
     }
@@ -121,9 +124,23 @@ const Voting = () => {
           <p>您是合約擁有者，可以查看投票統計</p>
           {/* 這裡會在管理面板中顯示詳細的投票結果 */}
         </div>
-      ) : hasVoted && !justVoted ? (
+      ) : userHasActuallyVoted && !justVoted ? (
         <div className="success-message">
           <p>已投票</p>
+          {submittedBallotCID && submittedBallotCID !== ethers.ZeroHash && (
+            <p style={{ fontSize: '0.8em', color: '#aaa' }}>
+              您的選票 CID: {
+                (() => {
+                  try {
+                    return ethers.decodeBytes32String(submittedBallotCID);
+                  } catch (e) {
+                    // If decoding fails (e.g., it's not a valid string), display the raw CID
+                    return submittedBallotCID;
+                  }
+                })()
+              }
+            </p>
+          )}
         </div>
       ) : (
         <div>

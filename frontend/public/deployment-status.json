@@ -1,6 +1,6 @@
 {
   "isDeployed": true,
-  "lastDeployment": "2025-06-04T17:39:41.801Z",
+  "lastDeployment": "2025-06-04T19:22:18.758Z",
   "contracts": {
     "management": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
     "counting": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
