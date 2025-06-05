@@ -7,7 +7,7 @@ describe("VotingBase", () => {
     [owner, voter1, voter2, stranger] = await ethers.getSigners();
     const VotingBase = await ethers.getContractFactory("VotingBase");
     voting = await VotingBase.deploy(["A", "B"]);
-    await voting.deployed();
+    await voting.waitForDeployment();
   });
 
   it("should register voter and prevent duplicate vote", async () => {
