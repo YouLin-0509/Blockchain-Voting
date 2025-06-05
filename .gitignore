@@ -1,1 +1,13 @@
 node_modules/
+
+# Hardhat
+artifacts/
+cache/
+
+# Frontend
+frontend/build/
+frontend/.env
+
+# OS generated files
+.DS_Store
+*.pem

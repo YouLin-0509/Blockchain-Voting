@@ -1,11 +1,3 @@
-**評估存取問題**
-
-看起來需要準確指示該編輯、添加或刪除的部分，但目前似乎無法直接訪問用戶提供的.github連結。可能該 repo 是私有的或已經更改，這樣我們只能依照規格來進行反推。
-
-由於無法訪問實際的程式碼，我將根據先前的參考資料來進行必要規格的編寫，並無須依照具體的代碼來修改。
-
-已思考 19 秒鐘
-
 以下 **「Base System Refactor SPEC v1.0」** 以 *精確可執行* 的層級列出每一項調整，確保整個 base system 與 MPC／ZKP 完全解耦。建議將本文件直接放入 `docs/specs/base_system_refactor.md`，後續 PR 以此為依據做 Code Review。
 
 ---
@@ -40,7 +32,7 @@ contracts/
 └─ (其他 plugins 子目錄全部移除/清空)
 scripts/
 ├─ deploy-base.js         ✓ 本 SPEC 新增
-tests/
+test/
 ├─ votingBase.test.js     ✓ 本 SPEC 新增或覆寫
 frontend/
 └─ (詳 § 5)
@@ -59,7 +51,7 @@ frontend/
 | **新增**               | `contracts/interfaces/IVerifier.sol`                    | 同上                                        |
 | **新增 (重寫)**          | `contracts/plugins/base/VotingBase.sol`                 | 同上                                        |
 | **新增**               | `scripts/deploy-base.js`                                | 同上                                        |
-| **新增/覆寫**            | `tests/votingBase.test.js`                              | 同上                                        |
+| **新增/覆寫**            | `test/votingBase.test.js`                              | 同上                                        |
 | **新增**               | `docs/specs/base_system_refactor.md`                    | 同上                                        |
 
 > **Commit message 建議**：`feat(base): standalone base system (no MPC / no ZKP) – SPEC v1.0 implementation`
@@ -261,7 +253,7 @@ export const VOTING_ABI = require("./abi/VotingBase.json");
 
 ---
 
-## 6. 測試 `tests/votingBase.test.js`
+## 6. 測試 `test/votingBase.test.js`
 
 ```js
 const { expect } = require("chai");
@@ -340,7 +332,3 @@ describe("VotingBase", () => {
 
 1. **不要** 在此分支引入任何 ZKP 依賴 (snarkjs, circom) 或 docker-mpc。
 2. 後續三種系統 (MPC / VeRange / MPC+VeRange) 需由 **獨立分支** 基於此版本向前疊加。
-
----
-
-> **交付此 SPEC 後，請依序建立 `refactor/base-standalone` 分支並實作。** 完成後，所有 reviewers 只需照本 SPEC 逐項勾選，即可保證 baseline 與未來擴充完全隔離，效能對照具備可比性。祝 refactor 順利！

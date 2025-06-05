@@ -1,81 +1,6 @@
 {
   "_format": "hh-sol-cache-2",
   "files": {
-    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\CountingContract.sol": {
-      "lastModificationDate": 1749040593472,
-      "contentHash": "b839d65aab65cea63de0804e42f2439f",
-      "sourceName": "contracts/CountingContract.sol",
-      "solcConfig": {
-        "version": "0.8.22",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.22"
-      ],
-      "artifacts": [
-        "CountingContract"
-      ]
-    },
-    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\CountingContract_Base.sol": {
-      "lastModificationDate": 1749072152555,
-      "contentHash": "2a1915cac748e615756fbba3e27e58a7",
-      "sourceName": "contracts/CountingContract_Base.sol",
-      "solcConfig": {
-        "version": "0.8.22",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "@openzeppelin/contracts/access/Ownable.sol"
-      ],
-      "versionPragmas": [
-        "^0.8.22"
-      ],
-      "artifacts": [
-        "CountingContract_Base",
-        "IManagementContract_Base"
-      ]
-    },
     "C:\\區塊鏈\\final_project\\Blockchain-Voting\\node_modules\\@openzeppelin\\contracts\\access\\Ownable.sol": {
       "lastModificationDate": 1749042053399,
       "contentHash": "d3c790edc9ccf808a17c5a6cd13614fd",
@@ -150,12 +75,12 @@
         "Context"
       ]
     },
-    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\ManagementContract_Base.sol": {
-      "lastModificationDate": 1749072121467,
-      "contentHash": "cf3e1b7f2bf24f9fa2d6c6f1aa6737e5",
-      "sourceName": "contracts/ManagementContract_Base.sol",
+    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\common\\BallotStorage.sol": {
+      "lastModificationDate": 1749100272951,
+      "contentHash": "6a00baffbad1d1b4da25f27c864de61c",
+      "sourceName": "contracts/common/BallotStorage.sol",
       "solcConfig": {
-        "version": "0.8.22",
+        "version": "0.8.24",
         "settings": {
           "optimizer": {
             "enabled": true,
@@ -178,22 +103,122 @@
           }
         }
       },
-      "imports": [
-        "@openzeppelin/contracts/access/Ownable.sol"
-      ],
+      "imports": [],
       "versionPragmas": [
-        "^0.8.22"
+        "^0.8.24"
+      ],
+      "artifacts": []
+    },
+    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\common\\Errors.sol": {
+      "lastModificationDate": 1749100280021,
+      "contentHash": "6a00baffbad1d1b4da25f27c864de61c",
+      "sourceName": "contracts/common/Errors.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": []
+    },
+    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\common\\Identity.sol": {
+      "lastModificationDate": 1749100287640,
+      "contentHash": "6a00baffbad1d1b4da25f27c864de61c",
+      "sourceName": "contracts/common/Identity.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": []
+    },
+    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\interfaces\\ITally.sol": {
+      "lastModificationDate": 1749099922157,
+      "contentHash": "8502823b9e61223d8f0cf6231a1dd4b7",
+      "sourceName": "contracts/interfaces/ITally.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.24"
       ],
       "artifacts": [
-        "ManagementContract_Base"
+        "ITally"
       ]
     },
-    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\ManagementContract.sol": {
-      "lastModificationDate": 1749069578667,
-      "contentHash": "1364b939b6b62dc53b2b8f983ec32391",
-      "sourceName": "contracts/ManagementContract.sol",
+    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\interfaces\\IVerifier.sol": {
+      "lastModificationDate": 1749099928759,
+      "contentHash": "af4b663f35abb6e4a459a3054c0e6365",
+      "sourceName": "contracts/interfaces/IVerifier.sol",
       "solcConfig": {
-        "version": "0.8.22",
+        "version": "0.8.24",
         "settings": {
           "optimizer": {
             "enabled": true,
@@ -216,15 +241,83 @@
           }
         }
       },
-      "imports": [
-        "@openzeppelin/contracts/access/Ownable.sol"
-      ],
+      "imports": [],
       "versionPragmas": [
-        "^0.8.22"
+        "^0.8.24"
       ],
       "artifacts": [
-        "ManagementContract"
+        "IVerifier"
       ]
+    },
+    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\plugins\\base\\VotingBase.sol": {
+      "lastModificationDate": 1749099941192,
+      "contentHash": "94701617ada2142c47c4c1d70578ba66",
+      "sourceName": "contracts/plugins/base/VotingBase.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": [
+        "VotingBase"
+      ]
+    },
+    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\VotingRouter.sol": {
+      "lastModificationDate": 1749100265713,
+      "contentHash": "6a00baffbad1d1b4da25f27c864de61c",
+      "sourceName": "contracts/VotingRouter.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": []
     }
   }
 }
