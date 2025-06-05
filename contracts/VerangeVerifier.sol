@@ -12,6 +12,21 @@ contract VerangeVerifier {
     using VerangeCrypto for VerangeCrypto.Point;
     // No longer need `using VerangeCrypto for VerangeCrypto.Point[];` as multiScalarMul is a direct call
 
+    /*
+    // Events were for debugging and are no longer needed.
+    event DebugEps(uint256 k, uint256 eps_k);
+    event DebugCheck3(
+        string label,
+        uint256 x,
+        uint256 y
+    );
+    event DebugCheck2(
+        string label,
+        uint256 x,
+        uint256 y
+    );
+    */
+
     struct Proof {
         VerangeCrypto.Point[] W;         // Array of K points
         VerangeCrypto.Point[] T;         // Array of K points
@@ -96,10 +111,11 @@ contract VerangeVerifier {
             abi.encodePacked(
                 Cm.x,
                 Cm.y,
-                prf.R.x,
-                prf.R.y,
-                prf.S.x,
-                prf.S.y,
+                // R and S are computed after eps is derived, so they must not be part of the hash.
+                // prf.R.x,
+                // prf.R.y,
+                // prf.S.x,
+                // prf.S.y,
                 wBytes,
                 tBytes
             )
@@ -112,6 +128,7 @@ contract VerangeVerifier {
                 epsk = 1; // Ensure non-zero
             }
             eps[k] = epsk;
+            // emit DebugEps(k, epsk); // Emit the debug event
         }
 
         // --- Temporary arrays for Check-1 calculations ---
@@ -153,6 +170,10 @@ contract VerangeVerifier {
         for(uint256 k=0; k < K_DIM; k++) {
             sum_W_k = VerangeCrypto.ecadd(sum_W_k, prf.W[k]);
         }
+
+        // emit DebugCheck3("Cm", Cm.x, Cm.y);
+        // emit DebugCheck3("sum_W_k", sum_W_k.x, sum_W_k.y);
+
         if (sum_W_k.x != Cm.x || sum_W_k.y != Cm.y) {
             return false;
         }
@@ -168,6 +189,9 @@ contract VerangeVerifier {
         VerangeCrypto.Point memory G_sum_vPrime = VerangeCrypto.ecmul(G, sum_vPrime_for_check2);
         VerangeCrypto.Point memory Q_eta2 = VerangeCrypto.ecmul(Q, prf.eta2);
         VerangeCrypto.Point memory rhs_check2 = VerangeCrypto.ecadd(G_sum_vPrime, Q_eta2);
+
+        // emit DebugCheck2("lhs_check2", lhs_check2.x, lhs_check2.y);
+        // emit DebugCheck2("rhs_check2", rhs_check2.x, rhs_check2.y);
 
         if (lhs_check2.x != rhs_check2.x || lhs_check2.y != rhs_check2.y) {
             return false;

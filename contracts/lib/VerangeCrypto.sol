@@ -90,7 +90,7 @@ library VerangeCrypto {
      * @return bool True if the point is on the curve, false otherwise.
      * Note: Points are assumed to have coordinates < FIELD_MODULUS.
      */
-    function isOnCurve(Point memory p) internal view returns (bool) {
+    function isOnCurve(Point memory p) internal pure returns (bool) {
         if (p.x == 0 && p.y == 0) { // Point at infinity is on the curve.
             return true;
         }

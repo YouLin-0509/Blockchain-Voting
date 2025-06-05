@@ -10,9 +10,10 @@ describe("TallyBase", function () {
 
     beforeEach(async function () {
         [owner, voter1, voter2] = await ethers.getSigners();
-        TallyBase = await ethers.getContractFactory("TallyBase");
-        tallyBase = await TallyBase.deploy(candidates);
-        // await tallyBase.deployed(); // Not needed in ethers v6, waitForDeployment is used if tx is needed
+        // We deploy SimpleTally, a concrete implementation of TallyBase
+        const SimpleTally = await ethers.getContractFactory("SimpleTally");
+        tallyBase = await SimpleTally.deploy(candidates);
+        await tallyBase.waitForDeployment();
     });
 
     describe("Deployment and Initialization", function () {
