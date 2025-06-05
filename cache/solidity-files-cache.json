@@ -338,8 +338,8 @@
       ]
     },
     "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\VerangeVerifier.sol": {
-      "lastModificationDate": 1749150461695,
-      "contentHash": "751db05539ce818f11e804f4ee94c8fb",
+      "lastModificationDate": 1749158459359,
+      "contentHash": "0773a2be619c6298894897574a97312b",
       "sourceName": "contracts/VerangeVerifier.sol",
       "solcConfig": {
         "version": "0.8.24",

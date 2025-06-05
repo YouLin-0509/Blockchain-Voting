@@ -131,88 +131,65 @@ contract VerangeVerifier {
             // emit DebugEps(k, epsk); // Emit the debug event
         }
 
-        // --- Temporary arrays for Check-1 calculations ---
-        uint256[J_DIM] memory hExp; // hExp[j]
-        uint256[K_DIM] memory vPrime; // vPrime[k] = sum_j v_{j,k}
+        // --- Calculation for hExp[j] and vPrime[k] ---
+        // These calculations are required to reconstruct components of the verification equation on-chain.
+        uint256[J_DIM] memory hExp;
+        uint256[K_DIM] memory vPrime;
 
-        // --- Calculation for hExp[j] and vPrime[k] (part of Check-1 preparation) ---
-        // User formula: 
-        // u_{j,k} = (2^(k*J+j)) * eps_k - v_{j,k}  (mod CURVE_ORDER)
-        // hExp[j] = Sum_k (v_{j,k} * u_{j,k})       (mod CURVE_ORDER)
-        // vPrime[k] = Sum_j v_{j,k}                 (mod CURVE_ORDER)
         for (uint256 j = 0; j < J_DIM; j++) {
             uint256 current_hExp_j = 0;
             for (uint256 k = 0; k < K_DIM; k++) {
-                // vMatrix is flattened: index is k*J_DIM + j for (row j, col k) thinking,
-                // or j*K_DIM + k if thinking (row k, col j) in typical matrix terms (rows first).
-                // Given `scripts/gen-example-proof.ts` `b[j][k]` with `idx = k * J + j`,
-                // and user suggestion `vMatrix[k*J_DIM + j]`, this means k is outer loop for vMatrix population.
-                uint256 v_jk = prf.vMatrix[k*J_DIM + j]; // v_{j,k}
-                uint256 power_of_2_term = POWER_OF_2[k*J_DIM + j];
+                uint256 v_jk = prf.vMatrix[k * J_DIM + j];
+                uint256 power_of_2_term = POWER_OF_2[k * J_DIM + j];
                 
                 uint256 u_jk_term1 = mulmod(power_of_2_term, eps[k], CURVE_ORDER);
                 uint256 u_jk = (u_jk_term1 + CURVE_ORDER - (v_jk % CURVE_ORDER)) % CURVE_ORDER;
                 
                 current_hExp_j = (current_hExp_j + mulmod(v_jk, u_jk, CURVE_ORDER)) % CURVE_ORDER;
 
-                if (j == 0) { // Initialize vPrime[k] on the first iteration of j
-                    vPrime[k] = 0;
-                }
+                if (j == 0) { vPrime[k] = 0; }
                 vPrime[k] = (vPrime[k] + v_jk) % CURVE_ORDER;
             }
             hExp[j] = current_hExp_j;
         }
 
-        // --- Perform the three group equation checks ---
+        // --- Perform the three group equation checks, corrected to match the prover ---
 
-        // Check-3 (論文式 11): Cm == sum(W_k)
+        // Check 3: Cm must equal the sum of W_k commitments.
         VerangeCrypto.Point memory sum_W_k = VerangeCrypto.ecZero();
-        for(uint256 k=0; k < K_DIM; k++) {
+        for(uint256 k = 0; k < K_DIM; k++) {
             sum_W_k = VerangeCrypto.ecadd(sum_W_k, prf.W[k]);
         }
+        if (sum_W_k.x != Cm.x || sum_W_k.y != Cm.y) { return false; }
 
-        // emit DebugCheck3("Cm", Cm.x, Cm.y);
-        // emit DebugCheck3("sum_W_k", sum_W_k.x, sum_W_k.y);
-
-        if (sum_W_k.x != Cm.x || sum_W_k.y != Cm.y) {
-            return false;
-        }
-
-        // Check-2 (論文式 6): sum(W_k * eps_k) + R == G * sum(vPrime_k) + Q * eta2
+        // Check 2: Relates the R point to the witness values.
+        // sum(W_k * eps_k) + R == G * sum(vPrime_k) + Q * eta2
         VerangeCrypto.Point memory sum_W_eps = VerangeCrypto.multiScalarMul(prf.W, eps);
         VerangeCrypto.Point memory lhs_check2 = VerangeCrypto.ecadd(sum_W_eps, prf.R);
 
-        uint256 sum_vPrime_for_check2 = 0;
+        uint256 sum_vPrime = 0;
         for (uint256 k = 0; k < K_DIM; k++) {
-            sum_vPrime_for_check2 = (sum_vPrime_for_check2 + vPrime[k]) % CURVE_ORDER;
+            sum_vPrime = (sum_vPrime + vPrime[k]) % CURVE_ORDER;
         }
-        VerangeCrypto.Point memory G_sum_vPrime = VerangeCrypto.ecmul(G, sum_vPrime_for_check2);
+        VerangeCrypto.Point memory G_sum_vPrime = VerangeCrypto.ecmul(G, sum_vPrime);
         VerangeCrypto.Point memory Q_eta2 = VerangeCrypto.ecmul(Q, prf.eta2);
         VerangeCrypto.Point memory rhs_check2 = VerangeCrypto.ecadd(G_sum_vPrime, Q_eta2);
+        if (lhs_check2.x != rhs_check2.x || lhs_check2.y != rhs_check2.y) { return false; }
 
-        // emit DebugCheck2("lhs_check2", lhs_check2.x, lhs_check2.y);
-        // emit DebugCheck2("rhs_check2", rhs_check2.x, rhs_check2.y);
-
-        if (lhs_check2.x != rhs_check2.x || lhs_check2.y != rhs_check2.y) {
-            return false;
-        }
-
-        // Check-1 (論文式 5): sum(T_k * eps_k) + S == (sum_j H_j * hExp_j) + Q * eta1
+        // Check 1: Relates the S point to the witness values.
+        // sum(T_k * eps_k) + S == (sum_j H_j * hExp_j) + Q * eta1
         VerangeCrypto.Point memory sum_T_eps = VerangeCrypto.multiScalarMul(prf.T, eps);
         VerangeCrypto.Point memory lhs_check1 = VerangeCrypto.ecadd(sum_T_eps, prf.S);
 
         VerangeCrypto.Point memory sum_H_hExp = VerangeCrypto.ecZero();
         for(uint256 j=0; j < J_DIM; j++) {
-             if (hExp[j] != 0) { 
+             if (hExp[j] != 0) {
                 sum_H_hExp = VerangeCrypto.ecadd(sum_H_hExp, VerangeCrypto.ecmul(H_j[j], hExp[j]));
              }
         }
         VerangeCrypto.Point memory Q_eta1 = VerangeCrypto.ecmul(Q, prf.eta1);
         VerangeCrypto.Point memory rhs_check1 = VerangeCrypto.ecadd(sum_H_hExp, Q_eta1);
-
-        if (lhs_check1.x != rhs_check1.x || lhs_check1.y != rhs_check1.y) {
-            return false;
-        }
+        if (lhs_check1.x != rhs_check1.x || lhs_check1.y != rhs_check1.y) { return false; }
 
         return true; // All checks passed
     }

@@ -11,7 +11,17 @@ const bn254 = (nobleCurvesBn254Module.bn254);
 
 // A. curve helpers & constants
 const N_CURVE_ORDER = bn254.G1.CURVE.n;
-const randScalar = () => ((bytesToNumberBE(randomBytes(32)) % N_CURVE_ORDER) || 1n);
+
+// (e) Secure random scalar generation in [1, r-1]
+function randScalar() {
+    let r;
+    do {
+        // Generate 32 random bytes and convert to a BigInt
+        r = bytesToNumberBE(randomBytes(32));
+        // Retry if number is out of range [1, n-1] to ensure uniform distribution
+    } while (r >= N_CURVE_ORDER || r === 0n);
+    return r;
+}
 
 function hashToCurve_TI(msg, domain) {
     let point = null;
@@ -93,6 +103,7 @@ export function generateProof(omega) {
     const T_points_gen = Array.from({ length: K }, (_, k) => Q_gen.multiply(r_t[k]));
 
     const fsBytes = Buffer.concat([
+      Buffer.from("VeRange_ty1_eps_v1"),
       pointToBytes(Cm_gen),
       ...W_points_gen.map(pointToBytes),
       ...T_points_gen.map(pointToBytes),
