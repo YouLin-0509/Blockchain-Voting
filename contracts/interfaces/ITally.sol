@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.20;
 
 interface ITally {
     /**
@@ -9,6 +9,15 @@ interface ITally {
      * @param candidateId The ID of the candidate to vote for.
      */
     function tallyVote(address voter, uint256 candidateId) external;
+
+    /**
+     * @notice Records a verified vote commitment from a specific voter.
+     * @dev Should only be callable by the VotingRouter after proof verification.
+     * @param voter The address of the user casting the vote.
+     * @param commitmentX The x-coordinate of the vote commitment.
+     * @param commitmentY The y-coordinate of the vote commitment.
+     */
+    function tallyCommitment(address voter, uint256 commitmentX, uint256 commitmentY) external;
 
     /**
      * @notice Gets the vote count for all candidates.

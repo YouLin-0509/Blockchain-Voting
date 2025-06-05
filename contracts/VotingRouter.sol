@@ -28,6 +28,7 @@ contract VotingRouter {
     event PhaseChanged(Phase oldPhase, Phase newPhase);
     event VoterRegistered(address indexed voter);
     event VoteCast(address indexed voter, uint256 indexed candidateId); // Mirrored from TallyPlugin or emitted by Router
+    event VerifiedVoteCast(address indexed voter, uint256 commitmentX, uint256 commitmentY); // New event for votes with proof
     event TallyPluginSet(address indexed newTallyAddress);
     event VerifierPluginSet(address indexed newVerifierAddress);
 
@@ -164,7 +165,59 @@ contract VotingRouter {
         emit VoteCast(msg.sender, _candidateId); // Router also emits this for its own log / UI
     }
     
-    // voteWithProof would go here later
+    /**
+     * @notice Allows a registered voter to cast a vote with a VeRange proof.
+     * @dev This function interacts with a verifierPlugin to validate the proof
+     *      and then with a tallyPlugin to record the verified vote (commitment).
+     */
+    function voteWithProof(
+        // Parameters match IVerifier.verifyVeRange
+        uint256[] memory W_points_x,
+        uint256[] memory W_points_y,
+        uint256[] memory T_points_x,
+        uint256[] memory T_points_y,
+        uint256 R_point_x,
+        uint256 R_point_y,
+        uint256 S_point_x,
+        uint256 S_point_y,
+        uint256 eta1,
+        uint256 eta2,
+        uint256 commitmentCmOmega_x,
+        uint256 commitmentCmOmega_y,
+        uint256[] memory v_prime_scalars,
+        uint256[] memory H_exponents
+    ) external inPhase(Phase.Voting) {
+        if (!isVoterRegistered[msg.sender]) {
+            revert VotingRouter__NotRegistered(msg.sender);
+        }
+        if (hasVoted[msg.sender]) {
+            revert VotingRouter__AlreadyVoted(msg.sender);
+        }
+
+        if (address(verifierPlugin) == address(0)) {
+            revert("VotingRouter: Verifier plugin not set"); // Using string error for now
+        }
+
+        bool isValid = verifierPlugin.verifyVeRange(
+            W_points_x, W_points_y, T_points_x, T_points_y,
+            R_point_x, R_point_y, S_point_x, S_point_y,
+            eta1, eta2,
+            commitmentCmOmega_x, commitmentCmOmega_y,
+            v_prime_scalars, H_exponents
+        );
+
+        if (!isValid) {
+            revert("VotingRouter: Invalid proof"); // Using string error for now
+        }
+
+        // Assuming ITally interface will have a function like tallyCommitment
+        // This function in ITally would take the voter's address and the commitment.
+        // The actual candidateId is now hidden by the commitment.
+        tallyPlugin.tallyCommitment(msg.sender, commitmentCmOmega_x, commitmentCmOmega_y);
+
+        hasVoted[msg.sender] = true;
+        emit VerifiedVoteCast(msg.sender, commitmentCmOmega_x, commitmentCmOmega_y);
+    }
 
     /* ---------- View Functions ---------- */
     function getPhase() external view returns (Phase) {
