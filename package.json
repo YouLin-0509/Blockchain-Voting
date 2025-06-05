@@ -6,13 +6,14 @@
     "connectkit": "^1.9.0",
     "ethers": "^6.14.3",
     "hardhat": "^2.24.1",
+    "hardhat-gas-reporter": "^2.3.0",
     "react": "^18.3.1",
     "viem": "^2.30.6",
     "wagmi": "^2.15.5"
   },
   "scripts": {
-    "dev":      "hardhat node",
-    "deploy":   "hardhat run scripts/deploy-base.js --network localhost",
-    "test":     "hardhat test"
+    "dev": "hardhat node",
+    "deploy": "hardhat run scripts/deploy-base.js --network localhost",
+    "test": "hardhat test"
   }
 }
