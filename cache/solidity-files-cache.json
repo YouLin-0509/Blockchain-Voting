@@ -76,7 +76,7 @@
       ]
     },
     "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\common\\BallotStorage.sol": {
-      "lastModificationDate": 1749100272951,
+      "lastModificationDate": 1749113598127,
       "contentHash": "6a00baffbad1d1b4da25f27c864de61c",
       "sourceName": "contracts/common/BallotStorage.sol",
       "solcConfig": {
@@ -86,6 +86,7 @@
             "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
           "evmVersion": "paris",
           "outputSelection": {
             "*": {
@@ -110,7 +111,7 @@
       "artifacts": []
     },
     "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\common\\Errors.sol": {
-      "lastModificationDate": 1749109370522,
+      "lastModificationDate": 1749113598130,
       "contentHash": "48b6f31d96eb770f32a11c7e0ee8e64d",
       "sourceName": "contracts/common/Errors.sol",
       "solcConfig": {
@@ -120,6 +121,7 @@
             "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
           "evmVersion": "paris",
           "outputSelection": {
             "*": {
@@ -144,7 +146,7 @@
       "artifacts": []
     },
     "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\common\\Identity.sol": {
-      "lastModificationDate": 1749100287640,
+      "lastModificationDate": 1749113598131,
       "contentHash": "6a00baffbad1d1b4da25f27c864de61c",
       "sourceName": "contracts/common/Identity.sol",
       "solcConfig": {
@@ -154,6 +156,7 @@
             "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
           "evmVersion": "paris",
           "outputSelection": {
             "*": {
@@ -178,8 +181,8 @@
       "artifacts": []
     },
     "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\VotingRouter.sol": {
-      "lastModificationDate": 1749109353303,
-      "contentHash": "08eaf39d91176d223160f9d97591f661",
+      "lastModificationDate": 1749125051905,
+      "contentHash": "33cdd194b58130fb016eedc49c0ce3e4",
       "sourceName": "contracts/VotingRouter.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -188,6 +191,7 @@
             "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
           "evmVersion": "paris",
           "outputSelection": {
             "*": {
@@ -218,8 +222,8 @@
       ]
     },
     "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\interfaces\\ITally.sol": {
-      "lastModificationDate": 1749108351968,
-      "contentHash": "27e61c9c4bb211334dfe3b9f120d7a55",
+      "lastModificationDate": 1749125065726,
+      "contentHash": "288a1e5c093cea7caa1b0e47af9417bf",
       "sourceName": "contracts/interfaces/ITally.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -228,6 +232,7 @@
             "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
           "evmVersion": "paris",
           "outputSelection": {
             "*": {
@@ -247,15 +252,15 @@
       },
       "imports": [],
       "versionPragmas": [
-        "^0.8.24"
+        "^0.8.20"
       ],
       "artifacts": [
         "ITally"
       ]
     },
     "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\interfaces\\IVerifier.sol": {
-      "lastModificationDate": 1749107923815,
-      "contentHash": "48195c6d1eddfea697ca4f7666f92231",
+      "lastModificationDate": 1749125051905,
+      "contentHash": "7e579cd888b8b90d67c22952bfbc1a08",
       "sourceName": "contracts/interfaces/IVerifier.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -264,6 +269,7 @@
             "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
           "evmVersion": "paris",
           "outputSelection": {
             "*": {
@@ -283,15 +289,15 @@
       },
       "imports": [],
       "versionPragmas": [
-        "^0.8.24"
+        "^0.8.20"
       ],
       "artifacts": [
         "IVerifier"
       ]
     },
     "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\plugins\\base\\TallyBase.sol": {
-      "lastModificationDate": 1749108667848,
-      "contentHash": "5dfb6788a327158982569853baf01e06",
+      "lastModificationDate": 1749142630700,
+      "contentHash": "8c4b35006c8a4ad006d6b44322c1413b",
       "sourceName": "contracts/plugins/base/TallyBase.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -300,6 +306,7 @@
             "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
           "evmVersion": "paris",
           "outputSelection": {
             "*": {
@@ -326,6 +333,119 @@
       ],
       "artifacts": [
         "TallyBase"
+      ]
+    },
+    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\lib\\VerangeCrypto.sol": {
+      "lastModificationDate": 1749138868452,
+      "contentHash": "8bae636f604ede521f4d737d37c2c868",
+      "sourceName": "contracts/lib/VerangeCrypto.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "VerangeCrypto"
+      ]
+    },
+    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\VerangeVerifier.sol": {
+      "lastModificationDate": 1749142666845,
+      "contentHash": "8dcf35a7f031a8305734f556e9924b9a",
+      "sourceName": "contracts/VerangeVerifier.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./lib/VerangeCrypto.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "VerangeVerifier"
+      ]
+    },
+    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\lib\\VerangeVerifier.sol": {
+      "lastModificationDate": 1749127712719,
+      "contentHash": "c39b292a96a3d0e6773146f63ce3e27a",
+      "sourceName": "contracts/lib/VerangeVerifier.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "VerangeVerifier"
       ]
     }
   }

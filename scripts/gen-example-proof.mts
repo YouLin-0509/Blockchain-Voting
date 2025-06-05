@@ -11,24 +11,26 @@ import { keccak_256 } from "@noble/hashes/sha3";
 import { randomBytes } from "crypto";
 import fs from "fs";
 
+console.log("Inspecting keccak_256 (still present for context):", keccak_256);
+
 const bn254 = (nobleCurvesBn254Module.bn254 as any);
 
 // ---------------------------------------------------------------------------
 //  A. curve helpers & constants
 // ---------------------------------------------------------------------------
-const N_CURVE_ORDER: bigint = bn254.CURVE.n;
+const N_CURVE_ORDER: bigint = bn254.G1.CURVE.n;
 
 const randScalar = (): bigint => (bytesToNumberBE(randomBytes(32)) % N_CURVE_ORDER + N_CURVE_ORDER) % N_CURVE_ORDER;
 
 // ---------------------------------------------------------------------------
 //  B. Common Reference String (transparent setup)
 // ---------------------------------------------------------------------------
-const G = bn254.ProjectivePoint.BASE;
-const Q_gen = bn254.ProjectivePoint.hashToCurve(utf8ToBytes("VeRange-Type1-Q"));
+const G = bn254.G1.ProjectivePoint.BASE;
+const Q_gen = bn254.G1.hashToCurve(utf8ToBytes("VeRange-Type1-Q"), { DST: "VERANGE_TYPE1_BN254_G1_Q" });
 
 const J = 8, K = 8;
 const H_gen: any[] = Array.from({ length: J }, (_, i) =>
-  bn254.ProjectivePoint.hashToCurve(utf8ToBytes(`VeRange-Type1-H${i + 1}`))
+  bn254.G1.hashToCurve(utf8ToBytes(`VeRange-Type1-H${i + 1}`), { DST: `VERANGE_TYPE1_BN254_G1_H${i+1}` })
 );
 
 // ---------------------------------------------------------------------------
@@ -91,7 +93,7 @@ const T_points_gen: any[] = Array.from({ length: K }, (_, k) => Q_gen.multiply(r
 // ---------------------------------------------------------------------------
 const sum_rj = r_jk.reduce((a, x) => (a + x % N_CURVE_ORDER + N_CURVE_ORDER) % N_CURVE_ORDER, 0n);
 const R_point_gen = G.multiply(sum_rj).add(Q_gen.multiply(r_R));
-const S_point_gen = bn254.ProjectivePoint.ZERO;
+const S_point_gen = bn254.G1.ProjectivePoint.ZERO;
 
 // ---------------------------------------------------------------------------
 //  I. Fiat–Shamir ε_k

@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "Node16",
+    "moduleResolution": "node16",
+    "esModuleInterop": true,
+    "strict": true,
+    "sourceMap": true,
+    "outDir": "./dist_compiled_scripts",
+    "rootDir": "./scripts",
+    "types": ["node"]
+  },
+  "include": [
+    "scripts/**/*.ts",
+    "scripts/**/*.mts"
+  ],
+  "exclude": [
+    "node_modules",
+    "frontend",
+    "test",
+    "contracts",
+    "cache",
+    "artifacts",
+    "dist_scripts",
+    "dist_compiled_scripts"
+  ]
+} 

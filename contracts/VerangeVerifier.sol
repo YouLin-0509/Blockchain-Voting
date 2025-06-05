@@ -31,7 +31,7 @@ contract VerangeVerifier {
 
     VerangeCrypto.Point private G;          // Base point G, (1,2)
     VerangeCrypto.Point private Q;          // Generator Q
-    VerangeCrypto.Point[J_DIM] private H; // Generators H_j
+    VerangeCrypto.Point[J_DIM] private H_j; // Generators H_j (Renamed from H)
 
     uint256[N_BITS] private POWER_OF_2; // POWER_OF_2[i] = 2^i
 
@@ -48,7 +48,9 @@ contract VerangeVerifier {
         //     require(VerangeCrypto.isOnCurve(_H[j]), "H_j not on curve");
         // }
         Q = _Q;
-        H = _H;
+        for (uint256 j_idx = 0; j_idx < J_DIM; j_idx++) { // loop var j_idx
+            H_j[j_idx] = _H[j_idx];
+        }
 
         for (uint256 i = 0; i < N_BITS; i++) {
             POWER_OF_2[i] = (1 << i); // Values are 2^i, not mod CURVE_ORDER
@@ -178,7 +180,7 @@ contract VerangeVerifier {
         VerangeCrypto.Point memory sum_H_hExp = VerangeCrypto.ecZero();
         for(uint256 j=0; j < J_DIM; j++) {
              if (hExp[j] != 0) { 
-                sum_H_hExp = VerangeCrypto.ecadd(sum_H_hExp, VerangeCrypto.ecmul(H[j], hExp[j]));
+                sum_H_hExp = VerangeCrypto.ecadd(sum_H_hExp, VerangeCrypto.ecmul(H_j[j], hExp[j]));
              }
         }
         VerangeCrypto.Point memory Q_eta1 = VerangeCrypto.ecmul(Q, prf.eta1);

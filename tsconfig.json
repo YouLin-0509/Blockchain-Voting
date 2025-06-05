@@ -5,7 +5,11 @@
     "moduleResolution": "node16",
     "esModuleInterop": true,
     "strict": true,
-    "types": ["node"]
+    "types": ["node", "hardhat/config", "@nomicfoundation/hardhat-toolbox"]
+  },
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
   },
   "include": [
     "scripts/**/*.ts",

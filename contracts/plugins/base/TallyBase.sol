@@ -10,7 +10,7 @@ import "../../common/Errors.sol"; // Import custom errors
  * @dev Handles the core logic of recording votes and retrieving results.
  *      Assumes that caller (VotingRouter) handles phase checks and initial voter eligibility.
  */
-contract TallyBase is ITally {
+abstract contract TallyBase is ITally {
     /* ---------- Storage ---------- */
     string[] public candidates;                     // candidateId = idx
     mapping(address => bool) public hasVoted;       // Tracks if a voter has already cast a vote through this tally module.
