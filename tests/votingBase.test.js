@@ -30,6 +30,6 @@ describe("VotingBase", () => {
     await voting.connect(voter2).vote(1);
     await voting.endVoting();
     const res = await voting.allResults();
-    expect(res.map(x=>x.toNumber())).to.deep.equal([1,1]);
+    expect(res.map(x => Number(x))).to.deep.equal([1,1]);
   });
 }); 
