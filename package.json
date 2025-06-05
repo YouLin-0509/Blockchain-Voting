@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@openzeppelin/contracts": "^5.3.0",
@@ -8,6 +9,8 @@
     "hardhat": "^2.24.1",
     "hardhat-gas-reporter": "^2.3.0",
     "react": "^18.3.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
     "viem": "^2.30.6",
     "wagmi": "^2.15.5"
   },
@@ -15,5 +18,9 @@
     "dev": "hardhat node",
     "deploy": "hardhat run scripts/deploy-base.js --network localhost",
     "test": "hardhat test"
+  },
+  "dependencies": {
+    "@noble/curves": "^1.9.2",
+    "@noble/hashes": "^1.8.0"
   }
 }

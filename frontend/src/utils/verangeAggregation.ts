@@ -1,6 +1,11 @@
-import { bn254 } from '@noble/curves/bn254'; // For BN254 curve operations
+import { bn254 as rawBn254 } from '@noble/curves/bn254'; // For BN254 curve operations
 import { keccak_256 } from 'js-sha3';
 import { ethers } from 'ethers'; // For abi.encodePacked alternative and BigNumber
+
+const bn254 = rawBn254 as any; // Assert to any to bypass typing issues
+
+// const ProjectivePoint = bn254.ProjectivePoint; // Removed
+// const CURVE = bn254.CURVE; // Removed
 
 // --- Helper Types (adjust to your actual structures) ---
 export interface Point { // Exporting for potential use elsewhere
@@ -24,8 +29,8 @@ export interface IndividualProof { // Exporting for potential use elsewhere
 export interface AggregatedProof extends Omit<IndividualProof, 'commitmentCmOmega' | 'W_points' | 'T_points' | 'R_point' | 'S_point' | 'eta1' | 'eta2' | 'v_prime_scalars' | 'H_exponents'> {
     // Redefine fields that are aggregated
     aggregatedCmOmega: Point;
-    W_points: Point[]; 
-    T_points: Point[]; 
+    W_points: Point[];
+    T_points: Point[];
     R_point: Point;
     S_point: Point;
     eta1: bigint;
@@ -35,16 +40,16 @@ export interface AggregatedProof extends Omit<IndividualProof, 'commitmentCmOmeg
 }
 
 
-const CURVE_ORDER = bn254.CURVE.n; // Scalar field order for modulo operations
+const CURVE_ORDER: bigint = bn254.CURVE.n; // Use bn254.CURVE and explicitly type as bigint
 
 // Helper function to convert Noble point to our Point type and back
-function toNoblePoint(p: Point): typeof bn254.Point {
-    if (p.x === 0n && p.y === 0n) return bn254.Point.ZERO; // Noble's representation of identity
-    return new bn254.Point(p.x, p.y);
+function toNoblePoint(p: Point): typeof bn254.ProjectivePoint { // Use bn254.ProjectivePoint
+    if (p.x === 0n && p.y === 0n) return bn254.ProjectivePoint.ZERO; // Noble's representation of identity
+    return new bn254.ProjectivePoint(p.x, p.y);
 }
 
-function fromNoblePoint(np: typeof bn254.Point): Point {
-    if (np.equals(bn254.Point.ZERO)) return { x: 0n, y: 0n };
+function fromNoblePoint(np: typeof bn254.ProjectivePoint): Point { // Use bn254.ProjectivePoint
+    if (np.equals(bn254.ProjectivePoint.ZERO)) return { x: 0n, y: 0n };
     return { x: np.x, y: np.y };
 }
 
@@ -83,19 +88,19 @@ export function aggregateProofs(
     const gammas: bigint[] = [];
     for (let t = 0; t < T; t++) {
         const cm_t = proofs[t].commitmentCmOmega;
-        const packedData = ethers.utils.solidityPack(
+        const packedData = ethers.solidityPacked(
             ["uint256", "uint256", "uint256"],
             [cm_t.x, cm_t.y, BigInt(t)] 
         );
-        const hash = keccak_256(ethers.utils.arrayify(packedData));
+        const hash = keccak_256(ethers.getBytes(packedData));
         let gamma_t = BigInt('0x' + hash) % CURVE_ORDER;
         if (gamma_t === 0n) {
             // Retry with a slightly different input if gamma_t is zero
-            const packedDataRetry = ethers.utils.solidityPack(
+            const packedDataRetry = ethers.solidityPacked(
                 ["uint256", "uint256", "uint256", "string"],
                 [cm_t.x, cm_t.y, BigInt(t), "retry"]
             );
-            const hashRetry = keccak_256(ethers.utils.arrayify(packedDataRetry));
+            const hashRetry = keccak_256(ethers.getBytes(packedDataRetry));
             gamma_t = BigInt('0x' + hashRetry) % CURVE_ORDER;
             if (gamma_t === 0n) {
                  console.error(`Gamma_t for proof ${t} is zero even after retry. This is highly unlikely.`);
@@ -106,11 +111,11 @@ export function aggregateProofs(
     }
 
     // Initialize aggregated components
-    let aggregatedCmOmega_noble = bn254.Point.ZERO;
-    const aggregatedW_points_noble: (typeof bn254.Point)[] = Array(kDim).fill(null).map(() => bn254.Point.ZERO);
-    const aggregatedT_points_noble: (typeof bn254.Point)[] = Array(kDim).fill(null).map(() => bn254.Point.ZERO);
-    let aggregatedR_point_noble = bn254.Point.ZERO;
-    let aggregatedS_point_noble = bn254.Point.ZERO;
+    let aggregatedCmOmega_noble = bn254.ProjectivePoint.ZERO;
+    const aggregatedW_points_noble: (typeof bn254.ProjectivePoint)[] = Array(kDim).fill(null).map(() => bn254.ProjectivePoint.ZERO);
+    const aggregatedT_points_noble: (typeof bn254.ProjectivePoint)[] = Array(kDim).fill(null).map(() => bn254.ProjectivePoint.ZERO);
+    let aggregatedR_point_noble = bn254.ProjectivePoint.ZERO;
+    let aggregatedS_point_noble = bn254.ProjectivePoint.ZERO;
     
     let aggregatedEta1 = 0n;
     let aggregatedEta2 = 0n;
