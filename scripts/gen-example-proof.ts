@@ -17,34 +17,31 @@ const bn254 = rawBn254 as any;
 //  A. curve helpers & constants
 // ---------------------------------------------------------------------------
 const { ProjectivePoint, CURVE } = bn254;
-const n_raw = CURVE.n;
-const N_ORDER = BigInt(n_raw);
+const n = CURVE.n;                                   // subgroup order
 
-const randScalar = (): bigint => (bytesToNumberBE(randomBytes(32)) % N_ORDER + N_ORDER) % N_ORDER;
+const randScalar = (): bigint => (bytesToNumberBE(randomBytes(32)) % n + n) % n;
 
 // ---------------------------------------------------------------------------
 //  B. Common Reference String (transparent setup)
 // ---------------------------------------------------------------------------
-const G = ProjectivePoint.BASE;
-const Q = ProjectivePoint.hashToCurve(utf8ToBytes("VeRange-Type1-Q"));
+const G = ProjectivePoint.BASE;                      // (1, 2)
+const Q_gen = ProjectivePoint.hashToCurve(utf8ToBytes("VeRange-Type1-Q")); // Renamed Q to Q_gen to avoid conflict with variable Q in pedersen context if any
 
 const J = 8, K = 8;
-const H: any[] = Array.from({ length: J }, (_, i) =>
+const H_gen: any[] = Array.from({ length: J }, (_, i) => // Renamed H to H_gen, type to any[]
   ProjectivePoint.hashToCurve(utf8ToBytes(`VeRange-Type1-H${i + 1}`))
 );
 
 // ---------------------------------------------------------------------------
 //  C. secret value & bit matrix
 // ---------------------------------------------------------------------------
-const N = 64n;
+const N_val = 64n; // Renamed N to N_val
 const omega = 5n;                                    // ω = 5
 
-// little‑endian bit array of length N
-const bits = [...omega.toString(2).padStart(Number(N), "0")]
+const bits = [...omega.toString(2).padStart(Number(N_val), "0")]
   .reverse()
   .map(Number);
 
-// b[j][k] : J × K
 const b: number[][] = Array.from({ length: J }, (_, j) =>
   Array.from({ length: K }, (_, k) => {
     const idx = k * J + j;
@@ -56,107 +53,122 @@ const b: number[][] = Array.from({ length: J }, (_, j) =>
 //  D. randomizers
 // ---------------------------------------------------------------------------
 const r_w: bigint[] = Array.from({ length: K }, randScalar);
-const r_omega = r_w.reduce((a, x) => (a + x % N_ORDER + N_ORDER) % N_ORDER, 0n);
+const r_omega = r_w.reduce((a, x) => (a + x % n + n) % n, 0n);
 
 const r_t: bigint[] = Array.from({ length: K }, randScalar);
-const r_jk: bigint[] = Array.from({ length: J * K }, randScalar);
-const r_R = randScalar();                                // extra blinding for R
+const r_jk: bigint[] = Array.from({ length: J * K }, randScalar); // This is vMatrix source
+const r_R = randScalar();
 
 // ---------------------------------------------------------------------------
 //  E. helper to build Pedersen‑like commitments
 // ---------------------------------------------------------------------------
-function pedersen(base: any, q: any, m: bigint, r: bigint) {
-  return base.multiply(m).add(q.multiply(r));
+function pedersen(base: any, q_param: any, m: bigint, r: bigint) { // Renamed q to q_param, base and q_param to any
+  return base.multiply(m).add(q_param.multiply(r));
 }
 
 // ---------------------------------------------------------------------------
 //  F. commitments W_k & Cm(ω)
 // ---------------------------------------------------------------------------
-const W: any[] = Array.from({ length: K }, (_, k) => {
+const W_points_gen: any[] = Array.from({ length: K }, (_, k) => { // Renamed W to W_points_gen, type to any[]
   let wk = 0n;
-  for (let j = 0; j < J; j++) {
-    if (b[j][k] === 1) {
-      const exp = BigInt(k * J + j);
-      wk = (wk + (1n << exp) % N_ORDER + N_ORDER) % N_ORDER;
+  for (let j_idx = 0; j_idx < J; j_idx++) { // Renamed j to j_idx
+    if (b[j_idx][k] === 1) {
+      const exp = BigInt(k * J + j_idx);
+      wk = (wk + (1n << exp) % n + n) % n;
     }
   }
-  return pedersen(G, Q, wk, r_w[k]);
+  return pedersen(G, Q_gen, wk, r_w[k]);
 });
 
-const Cm = pedersen(G, Q, omega, r_omega);
+const Cm_gen = pedersen(G, Q_gen, omega, r_omega); // Renamed Cm to Cm_gen
 
 // ---------------------------------------------------------------------------
 //  G. T_k
 // ---------------------------------------------------------------------------
-const T: any[] = Array.from({ length: K }, (_, k) => Q.multiply(r_t[k]));
+const T_points_gen: any[] = Array.from({ length: K }, (_, k) => Q_gen.multiply(r_t[k])); // Renamed T to T_points_gen, type to any[]
 
 // ---------------------------------------------------------------------------
 //  H. R, S
 // ---------------------------------------------------------------------------
-const sum_rj = r_jk.reduce((a, x) => (a + x % N_ORDER + N_ORDER) % N_ORDER, 0n);
-const R_point = G.multiply(sum_rj).add(Q.multiply(r_R));
-const S_point = ProjectivePoint.ZERO;                  // A_hat_j = 0 ⇒ identity
+const sum_rj = r_jk.reduce((a, x) => (a + x % n + n) % n, 0n);
+const R_point_gen = G.multiply(sum_rj).add(Q_gen.multiply(r_R)); // Renamed R_point
+const S_point_gen = ProjectivePoint.ZERO; // Renamed S_point
 
 // ---------------------------------------------------------------------------
 //  I. Fiat–Shamir ε_k
 // ---------------------------------------------------------------------------
 const fsBytes = Buffer.concat([
-  Cm.toRawBytes(true),
-  R_point.toRawBytes(true),
-  S_point.toRawBytes(true),
-  ...W.map(p => p.toRawBytes(true)),
-  ...T.map(p => p.toRawBytes(true)),
+  Cm_gen.toRawBytes(true),
+  R_point_gen.toRawBytes(true),
+  S_point_gen.toRawBytes(true),
+  ...W_points_gen.map(p => p.toRawBytes(true)),
+  ...T_points_gen.map(p => p.toRawBytes(true)),
 ]);
 const eHash = keccak_256(fsBytes);
-const eps: bigint[] = Array.from({ length: K }, (_, k) =>
-  (bytesToNumberBE(Buffer.concat([eHash, Buffer.from([k])])) % N_ORDER + N_ORDER) % N_ORDER || 1n
+// Keep this derivation as it matches the agreed Solidity side (hash of 33-byte seed)
+const eps: bigint[] = Array.from({ length: K }, (_, k_idx) => // Renamed k to k_idx
+  (bytesToNumberBE(keccak_256(Buffer.concat([eHash, Buffer.from([k_idx])]))) % n + n) % n || 1n
 );
 
 // ---------------------------------------------------------------------------
-//  J. v'_k   &   η₂
+//  J. vMatrix (replaces v_prime direct calculation for proof, v_prime is for local use if needed)
 // ---------------------------------------------------------------------------
-const v_prime: bigint[] = Array.from({ length: K }, (_, k) => {
-  let acc = 0n;
-  for (let j = 0; j < J; j++) acc = (acc + r_jk[k * J + j] % N_ORDER + N_ORDER) % N_ORDER;
-  return acc;
+const vMatrix: bigint[] = r_jk; // vMatrix is r_jk, as per user instruction
+
+// For convenience (e.g. if eta2 calculation still uses vPrime), calculate vPrime from vMatrix
+// This vPrime matches the old v_prime calculation based on r_jk.
+const vPrime: bigint[] = Array.from({ length: K }, (_, k_idx) => { // Renamed k to k_idx
+    let acc = 0n;
+    for (let j_idx = 0; j_idx < J; j_idx++) { // Renamed j to j_idx
+        acc = (acc + vMatrix[k_idx * J + j_idx] % n + n) % n; // Access vMatrix correctly: k is outer, j is inner for this sum
+    }
+    return acc;
 });
 
 let eta2 = r_R;
-for (let k = 0; k < K; k++) {
-    const term = (v_prime[k] * eps[k]) % N_ORDER;
-    eta2 = (eta2 + (term + N_ORDER) % N_ORDER) % N_ORDER;
+for (let k_idx = 0; k_idx < K; k_idx++) { // Renamed k to k_idx
+    const term = (vPrime[k_idx] * eps[k_idx]) % n;
+    eta2 = (eta2 + (term + n)%n ) %n;
 }
 
 // ---------------------------------------------------------------------------
-//  K. η₁  &  (trivial) H_exponents = 0
+//  K. η₁ (H_exponents are implicitly zero and not part of the proof)
 // ---------------------------------------------------------------------------
 let eta1 = 0n;
-for (let k = 0; k < K; k++) {
-    const term = (r_t[k] * eps[k]) % N_ORDER;
-    eta1 = (eta1 + (term + N_ORDER) % N_ORDER) % N_ORDER;
+for (let k_idx = 0; k_idx < K; k_idx++) { // Renamed k to k_idx
+    const term = (r_t[k_idx] * eps[k_idx]) % n;
+    eta1 = (eta1 + (term + n)%n ) %n;
 }
-const H_exponents: bigint[] = Array(J).fill(0n);
 
 // ---------------------------------------------------------------------------
 //  L. output JSON
 // ---------------------------------------------------------------------------
-function pt(p: any) {
-  const [x, y] = p.toAffine();
-  return { x: "0x" + x.toString(16), y: "0x" + y.toString(16) };
+function pt_func(p: any) { // Renamed pt to pt_func, type to any
+  const [x, y_coord] = p.toAffine(); // Renamed y to y_coord
+  return { x: "0x" + x.toString(16), y: "0x" + y_coord.toString(16) };
 }
 
 const proofJson = {
-  commitmentCmOmega: pt(Cm),
-  R_point: pt(R_point),
-  S_point: pt(S_point),
-  W_points: W.map(pt),
-  T_points: T.map(pt),
+  commitmentCmOmega: pt_func(Cm_gen),
+  R_point: pt_func(R_point_gen),
+  S_point: pt_func(S_point_gen),
+  W_points: W_points_gen.map(pt_func),
+  T_points: T_points_gen.map(pt_func),
   eta1: "0x" + eta1.toString(16),
   eta2: "0x" + eta2.toString(16),
-  v_prime_scalars: v_prime.map(v => "0x" + v.toString(16)),
-  H_exponents: H_exponents.map(() => "0x0"),
+  vMatrix: vMatrix.map((v) => "0x" + v.toString(16)), // Add vMatrix
+  // v_prime_scalars and H_exponents are removed
 };
 
 fs.mkdirSync("scripts", { recursive: true });
 fs.writeFileSync("scripts/example_proof.json", JSON.stringify(proofJson, null, 2));
-console.log("\u2705  example_proof.json generated → scripts/example_proof.json"); 
+console.log("\u2705  example_proof.json generated → scripts/example_proof.json (with vMatrix)");
+
+// Original calculation of v_prime (for reference, should match vPrime above)
+/*
+const original_v_prime: bigint[] = Array.from({ length: K }, (_, k) => {
+  let acc = 0n;
+  for (let j = 0; j < J; j++) acc = (acc + r_jk[k * J + j] % n + n) % n;
+  return acc;
+});
+*/ 
