@@ -3,11 +3,12 @@ pragma solidity ^0.8.24;
 
 interface ITally {
     /**
-     * @notice Records a vote for a given candidate.
+     * @notice Records a vote for a given candidate from a specific voter.
      * @dev Should only be callable by the VotingRouter.
+     * @param voter The address of the user casting the vote.
      * @param candidateId The ID of the candidate to vote for.
      */
-    function tallyVote(uint256 candidateId) external;
+    function tallyVote(address voter, uint256 candidateId) external;
 
     /**
      * @notice Gets the vote count for all candidates.
