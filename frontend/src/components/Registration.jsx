@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useAccount, useConnect, useDisconnect, useContractWrite, usePrepareContractWrite, useContractRead, usePublicClient } from 'wagmi';
-import { CONTRACT_ADDRESSES, CONTRACT_ABIS, CONTRACT_OWNER } from '../config/contracts';
-import { readContract } from '@wagmi/core'; // 更底層的調用
+import { useAccount, useConnect, useDisconnect, useContractWrite, usePrepareContractWrite, useContractRead } from 'wagmi';
+import { VOTING_ROUTER_ADDRESS, VOTING_ROUTER_ABI } from '../config/contracts';
+
+// Enum for phases from contract
+const PHASES = {
+  REGISTRATION: 0,
+  VOTING: 1,
+  FINISHED: 2,
+};
 
 function ConnectWallet() {
   const { connect, connectors, isLoading, pendingConnector } = useConnect();
@@ -9,12 +15,9 @@ function ConnectWallet() {
   const { address, isConnected } = useAccount();
 
   if (isConnected) {
-    const isOwner = address?.toLowerCase() === CONTRACT_OWNER.toLowerCase();
-    
     return (
       <div className="wallet-status">
         <p>您的錢包地址: {address}</p>
-        {isOwner && <p className="owner-badge">✓ 合約擁有者</p>}
         <button onClick={() => disconnect()} className="disconnect-btn">
           斷開連接
         </button>
@@ -42,99 +45,81 @@ function ConnectWallet() {
 }
 
 const Registration = () => {
-  const { address } = useAccount();
+  const { address: currentUserAddress } = useAccount();
   const [error, setError] = useState('');
   const [justRegistered, setJustRegistered] = useState(false);
-  const [isRegistrationOpen, setIsRegistrationOpen] = useState(undefined);
-  const [isCheckingRegistrationOpen, setIsCheckingRegistrationOpen] = useState(true);
 
-  // 檢查是否已註冊（從智能合約讀取）
-  const { data: isRegistered, refetch: refetchRegistration, isError: isRegistrationError } = useContractRead({
-    address: CONTRACT_ADDRESSES.MANAGEMENT,
-    abi: CONTRACT_ABIS.MANAGEMENT,
-    functionName: 'isVoterRegistered',
-    args: [address],
-    enabled: !!address,
+  const { data: contractAdminAddress, isLoading: isLoadingAdmin } = useContractRead({
+    address: VOTING_ROUTER_ADDRESS,
+    abi: VOTING_ROUTER_ABI,
+    functionName: 'admin',
+    enabled: !!VOTING_ROUTER_ADDRESS,
+    watch: true,
+  });
+
+  const isAdmin = !isLoadingAdmin && currentUserAddress && contractAdminAddress && currentUserAddress.toLowerCase() === contractAdminAddress.toLowerCase();
+
+  const { data: currentPhaseData, isLoading: isLoadingPhase, isError: isPhaseError } = useContractRead({
+    address: VOTING_ROUTER_ADDRESS,
+    abi: VOTING_ROUTER_ABI,
+    functionName: 'getPhase',
+    enabled: !!VOTING_ROUTER_ADDRESS && !!currentUserAddress,
+    watch: true,
+  });
+  const currentPhase = currentPhaseData !== undefined ? Number(currentPhaseData) : undefined;
+
+  const { data: isRegisteredData, refetch: refetchRegistration, isError: isRegistrationCheckError } = useContractRead({
+    address: VOTING_ROUTER_ADDRESS,
+    abi: VOTING_ROUTER_ABI,
+    functionName: 'isRegistered',
+    args: [currentUserAddress],
+    enabled: !!currentUserAddress && !!VOTING_ROUTER_ADDRESS,
     blockTag: 'latest',
     staleTime: 1000, 
   });
+  const isRegistered = isRegisteredData === true;
 
-  // 手動檢查註冊是否開放
-  useEffect(() => {
-    const checkStatus = async () => {
-      setIsCheckingRegistrationOpen(true);
-      setError(''); // 清除之前的錯誤
-      try {
-        console.log('[DEBUG] 嘗試手動讀取 isRegistrationOpen...');
-        const data = await readContract({
-          address: CONTRACT_ADDRESSES.MANAGEMENT,
-          abi: CONTRACT_ABIS.MANAGEMENT,
-          functionName: 'isRegistrationOpen',
-          blockTag: 'latest',
-        });
-        console.log('[DEBUG] 手動 isRegistrationOpen 返回:', data);
-        setIsRegistrationOpen(data);
-      } catch (err) {
-        console.error('[DEBUG] 手動讀取 isRegistrationOpen 失敗:', err);
-        setError('無法獲取註冊開放狀態: ' + (err.shortMessage || err.message));
-        setIsRegistrationOpen(false); 
-      }
-      setIsCheckingRegistrationOpen(false);
-    };
-    checkStatus();
-  }, []); 
-
-  // 準備註冊交易
   const {
     config: registerConfig, 
     error: prepareError, 
     isError: isPrepareError, 
     isLoading: isLoadingPrepare,
-    status: prepareStatus
   } = usePrepareContractWrite({
-    address: CONTRACT_ADDRESSES.MANAGEMENT,
-    abi: CONTRACT_ABIS.MANAGEMENT,
+    address: VOTING_ROUTER_ADDRESS,
+    abi: VOTING_ROUTER_ABI,
     functionName: 'register',
-    args: ['0x', '0x'],
-    enabled: !!address && !isRegistered && !isRegistrationError && isRegistrationOpen === true,
+    args: [],
+    enabled: !!currentUserAddress && !isRegistered && !isRegistrationCheckError && (currentPhase === PHASES.REGISTRATION) && !!VOTING_ROUTER_ADDRESS && !isLoadingAdmin && !isAdmin,
   });
   
   useEffect(() => {
-    console.log('[DEBUG] usePrepareContractWrite status:', prepareStatus);
-    if (isPrepareError) {
+    if (isPrepareError && !isLoadingAdmin && !isAdmin) {
       console.error('[DEBUG] 準備註冊交易失敗 (prepareError object):', prepareError);
-      setError('準備註冊時出錯: ' + (prepareError.shortMessage || prepareError.message));
+      setError('準備註冊時出錯: ' + (prepareError?.shortMessage || prepareError?.message || '未知準備錯誤'));
     }
-    if (registerConfig) {
-      console.log('[DEBUG] 準備好的註冊交易配置 (registerConfig):', registerConfig);
-    } else {
-      console.log('[DEBUG] registerConfig 尚未準備好或為 undefined。');
-    }
-  }, [prepareError, isPrepareError, registerConfig, prepareStatus]);
+  }, [prepareError, isPrepareError, isAdmin, isLoadingAdmin]);
 
   const { 
     write: registerVoter, 
     isLoading: isRegistering,
     isSuccess: registerSuccess,
-    status: writeStatus,
-    error: writeError
   } = useContractWrite({
     ...registerConfig,
     onSuccess: () => {
-      console.log('[DEBUG] useContractWrite onSuccess');
+      console.log('[DEBUG] useContractWrite onSuccess for register');
       setJustRegistered(true);
       setTimeout(() => {
         refetchRegistration(); 
       }, 2000);
     },
     onError: (error) => {
-      console.error('[DEBUG] useContractWrite onError:', error);
+      console.error('[DEBUG] useContractWrite onError for register:', error);
       let detailedMessage = '註冊失敗';
       if (error && typeof error.message === 'string') {
-        if (error.message.includes("Voter already registered")) {
+        if (error.message.includes("VotingRouter__AlreadyRegistered")) {
           detailedMessage = '您已經註冊過了';
-        } else if (error.message.includes("Registration is closed")) {
-          detailedMessage = '註冊已關閉';
+        } else if (error.message.includes("VotingRouter__InvalidPhase")) {
+          detailedMessage = '非註冊階段，無法註冊';
         } else if (error.shortMessage) {
           detailedMessage = error.shortMessage;
         } else {
@@ -145,57 +130,52 @@ const Registration = () => {
     }
   });
 
-  useEffect(() => {
-    console.log('[DEBUG] useContractWrite status:', writeStatus);
-    if (writeError) {
-        console.error('[DEBUG] useContractWrite error state:', writeError);
-    }
-  }, [writeStatus, writeError]);
-
   const handleRegister = async () => {
-    console.log('[DEBUG] handleRegister 點擊');
-    setError(''); // 清除之前的錯誤
-
-    if (!address) {
+    setError('');
+    if (!currentUserAddress) {
       setError('請先連接錢包');
       return;
     }
-    if (isCheckingRegistrationOpen) {
-      setError('正在檢查註冊狀態，請稍候...');
+    if (isLoadingAdmin) {
+        setError('正在確認管理員身份，請稍候...');
+        return;
+    }
+    if (isAdmin) {
+        setError('管理員無法在此註冊為選民。');
+        console.log('管理員嘗試透過 handleRegister 註冊，已阻止。');
+        return;
+    }
+    if (isLoadingPhase) {
+        setError('正在讀取註冊階段，請稍候...');
+        return;
+    }
+    if (isPhaseError) {
+        setError('無法讀取註冊階段，請刷新。');
+        return;
+    }
+    if (currentPhase !== PHASES.REGISTRATION) {
+      setError(`註冊目前未開放。(階段: ${currentPhase})`);
       return;
     }
-    if (isRegistrationError) {
+    if (isRegistrationCheckError) {
       setError('無法檢查選民註冊狀態，請重新載入頁面');
-      return;
-    }
-    if (isRegistrationOpen !== true) {
-      setError('註冊目前未開放或狀態未知。' + ` (isRegistrationOpen: ${isRegistrationOpen})`);
       return;
     }
     if (isRegistered) {
       setError('您已經註冊過了。');
       return;
     }
-
-    console.log('[DEBUG] handleRegister 準備調用 registerVoter, isLoadingPrepare:', isLoadingPrepare, 'isPrepareError:', isPrepareError);
-    console.log('[DEBUG] registerConfig 在 handleRegister 中:', registerConfig);
-
     if (isLoadingPrepare) {
         setError('正在準備註冊交易，請稍候...');
         return;
     }
-    if (isPrepareError || !registerConfig?.request) { // 檢查 registerConfig.request 是否存在
-        console.error("[DEBUG] Register config is not ready or has an error in handleRegister", registerConfig, prepareError);
+    if (isPrepareError || !registerConfig?.request) {
         setError('註冊配置準備失敗，請刷新頁面或稍後再試。' + (prepareError?.shortMessage || ''));
         return;
     }
-
     try {
-      console.log('[DEBUG] 即將調用 registerVoter()...');
       await registerVoter?.();
-      console.log('[DEBUG] registerVoter() 調用完畢 (不代表成功，等待 onSuccess/onError)');
     } catch (err) {
-      console.error('[DEBUG] handleRegister catch block error:', err);
       setError(err.shortMessage || err.message || '註冊時捕獲到意外錯誤');
     }
   };
@@ -203,51 +183,52 @@ const Registration = () => {
   useEffect(() => {
     setJustRegistered(false);
     setError('');
-  }, [address]);
+  }, [currentUserAddress]);
 
   useEffect(() => {
     if (registerSuccess && justRegistered) {
-      const timer = setTimeout(() => {
-        setJustRegistered(false);
-      }, 3000); 
+      const timer = setTimeout(() => setJustRegistered(false), 3000);
       return () => clearTimeout(timer);
     }
   }, [registerSuccess, justRegistered]);
 
-  if (isCheckingRegistrationOpen && isRegistrationOpen === undefined) {
-    return <p>正在載入註冊狀態...</p>;
+  const isRegistrationOpen = currentPhase === PHASES.REGISTRATION;
+
+  let statusContent;
+  if (!currentUserAddress) {
+    statusContent = <p>請先連接錢包進行註冊</p>;
+  } else if (isLoadingPhase || isLoadingAdmin) {
+    statusContent = <p>正在載入資料，請稍候...</p>;
+  } else if (isAdmin) {
+    statusContent = <div className="admin-message" style={{ padding: '10px', border: '1px solid #007bff', borderRadius: '5px', backgroundColor: '#e7f3ff', color: '#004085' }}><p><strong>管理員身份已確認。</strong><br />您無需在此頁面進行選民註冊。</p></div>;
+  } else if (isPhaseError) {
+    statusContent = <div className="error"><p>無法讀取註冊階段，請刷新頁面。</p></div>;
+  } else if (isRegistrationCheckError) {
+    statusContent = <div className="error"><p>無法檢查選民註冊狀態，請重新載入頁面。</p></div>;
+  } else if (!isRegistrationOpen) {
+    statusContent = <div className="error"><p>註冊已關閉或目前非註冊階段。</p></div>;
+  } else if (isRegistered && !justRegistered) {
+    statusContent = <div className="success-message"><p>✅ 您已註冊</p></div>;
+  } else {
+    statusContent = (
+      <div>
+        <button 
+          onClick={handleRegister}
+          disabled={isRegistering || isLoadingPrepare || !registerVoter || isRegistered || !isRegistrationOpen }
+        >
+          {isRegistering ? '註冊中...' : (isLoadingPrepare ? '準備中...' : '註冊為選民')}
+        </button>
+        {justRegistered && <p className="success">🎉 註冊成功！</p>}
+        {error && <p className="error">{error}</p>}
+      </div>
+    );
   }
 
   return (
     <div className="registration-container">
       <h2>選民註冊</h2>
       <ConnectWallet />
-      {!address ? (
-        <p>請先連接錢包進行註冊</p>
-      ) : isRegistrationError ? (
-        <div className="error">
-          <p>無法檢查選民註冊狀態，請重新載入頁面或檢查網路連接</p>
-        </div>
-      ) : isRegistrationOpen === false ? (
-        <div className="error">
-          <p>註冊已關閉，無法進行新的註冊</p>
-        </div>
-      ) : isRegistered && !justRegistered ? (
-        <div className="success-message">
-          <p>已註冊</p>
-        </div>
-      ) : (
-        <div>
-          <button 
-            onClick={handleRegister}
-            disabled={!address || isRegistering || !registerVoter || isRegistered || isRegistrationOpen !== true || isPrepareError || isLoadingPrepare}
-          >
-            {isRegistering ? '註冊中...' : (isLoadingPrepare ? '準備中...' : '註冊為選民')}
-          </button>
-          {justRegistered && <p className="success">註冊成功！</p>}
-          {error && <p className="error">{error}</p>}
-        </div>
-      )}
+      {statusContent}
     </div>
   );
 };

@@ -2,9 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "../../interfaces/ITally.sol";
-// We might still need Errors.sol if specific errors are thrown from tallying logic itself.
-// For now, let's assume basic errors like "ALREADY_VOTED" or "BAD_CANDIDATE_ID" are still relevant.
-// import "../../../common/Errors.sol"; // Assuming path needs adjustment if TallyBase is in plugins/base
+import "../../common/Errors.sol"; // Import custom errors
 
 /**
  * @title TallyBase
@@ -34,8 +32,12 @@ contract TallyBase is ITally {
      *      Prevents the same voter from voting multiple times via this tally instance.
      */
     function tallyVote(address voter, uint256 candidateId) external override {
-        require(candidateId < candidates.length, "TallyBase:BAD_CANDIDATE_ID");
-        require(!hasVoted[voter], "TallyBase:ALREADY_VOTED");
+        if (candidateId >= candidates.length) {
+            revert TallyBase__InvalidCandidateId(candidateId, candidates.length);
+        }
+        if (hasVoted[voter]) {
+            revert TallyBase__AlreadyVoted(voter);
+        }
 
         hasVoted[voter] = true;
         _results[candidateId] += 1;

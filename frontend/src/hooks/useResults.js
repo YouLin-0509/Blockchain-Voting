@@ -1,11 +1,11 @@
 import { useContractRead } from "wagmi";
-import { VOTING_ADDRESS, VOTING_ABI } from "../config/contracts";
+import { VOTING_ROUTER_ADDRESS, VOTING_ROUTER_ABI } from "../config/contracts";
 
 export function useResults(enabled) {
   return useContractRead({
-    address: VOTING_ADDRESS,
-    abi: VOTING_ABI,
-    functionName: "allResults",
+    address: VOTING_ROUTER_ADDRESS,
+    abi: VOTING_ROUTER_ABI,
+    functionName: "getResults",
     enabled,
     watch: false,
   });

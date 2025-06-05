@@ -110,8 +110,8 @@
       "artifacts": []
     },
     "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\common\\Errors.sol": {
-      "lastModificationDate": 1749100280021,
-      "contentHash": "6a00baffbad1d1b4da25f27c864de61c",
+      "lastModificationDate": 1749109370522,
+      "contentHash": "48b6f31d96eb770f32a11c7e0ee8e64d",
       "sourceName": "contracts/common/Errors.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -177,9 +177,49 @@
       ],
       "artifacts": []
     },
+    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\VotingRouter.sol": {
+      "lastModificationDate": 1749109353303,
+      "contentHash": "08eaf39d91176d223160f9d97591f661",
+      "sourceName": "contracts/VotingRouter.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./interfaces/ITally.sol",
+        "./interfaces/IVerifier.sol",
+        "./common/Errors.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": [
+        "VotingRouter"
+      ]
+    },
     "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\interfaces\\ITally.sol": {
-      "lastModificationDate": 1749099922157,
-      "contentHash": "8502823b9e61223d8f0cf6231a1dd4b7",
+      "lastModificationDate": 1749108351968,
+      "contentHash": "27e61c9c4bb211334dfe3b9f120d7a55",
       "sourceName": "contracts/interfaces/ITally.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -214,8 +254,8 @@
       ]
     },
     "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\interfaces\\IVerifier.sol": {
-      "lastModificationDate": 1749099928759,
-      "contentHash": "af4b663f35abb6e4a459a3054c0e6365",
+      "lastModificationDate": 1749107923815,
+      "contentHash": "48195c6d1eddfea697ca4f7666f92231",
       "sourceName": "contracts/interfaces/IVerifier.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -249,10 +289,10 @@
         "IVerifier"
       ]
     },
-    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\plugins\\base\\VotingBase.sol": {
-      "lastModificationDate": 1749099941192,
-      "contentHash": "94701617ada2142c47c4c1d70578ba66",
-      "sourceName": "contracts/plugins/base/VotingBase.sol",
+    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\plugins\\base\\TallyBase.sol": {
+      "lastModificationDate": 1749108667848,
+      "contentHash": "5dfb6788a327158982569853baf01e06",
+      "sourceName": "contracts/plugins/base/TallyBase.sol",
       "solcConfig": {
         "version": "0.8.24",
         "settings": {
@@ -277,47 +317,16 @@
           }
         }
       },
-      "imports": [],
+      "imports": [
+        "../../interfaces/ITally.sol",
+        "../../common/Errors.sol"
+      ],
       "versionPragmas": [
         "^0.8.24"
       ],
       "artifacts": [
-        "VotingBase"
+        "TallyBase"
       ]
-    },
-    "C:\\區塊鏈\\final_project\\Blockchain-Voting\\contracts\\VotingRouter.sol": {
-      "lastModificationDate": 1749100265713,
-      "contentHash": "6a00baffbad1d1b4da25f27c864de61c",
-      "sourceName": "contracts/VotingRouter.sol",
-      "solcConfig": {
-        "version": "0.8.24",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.24"
-      ],
-      "artifacts": []
     }
   }
 }
