@@ -6,29 +6,11 @@ describe("VeRange — single proof", () => {
   let verifier, proofData; // Renamed proof to proofData to avoid conflict with it block variable
 
   before(async () => {
-    // Deploy VerangeVerifier
     const crs = JSON.parse(fs.readFileSync("scripts/crs.json", "utf8"));
-    
-    // As noted in deploy/01_verifier.ts, the constructor arguments need to match Solidity.
-    // VerangeVerifier constructor: constructor(Point memory _Q, Point[J_DIM] memory _H)
-    // G is hardcoded in Solidity.
-    // Proposed correct argument format for _H: crs.H.map((p) => ({ x: p.x, y: p.y }))
-    // The user's flattedH: crs.H.flatMap((p) => [p.x, p.y]) might not work directly for Point[] struct array.
-    const H_struct_array_for_deploy = crs.H.map((p_val) => ({ x: p_val.x, y: p_val.y })); // Renamed p to p_val
+    const H_struct_array_for_deploy = crs.H.map((p_val) => ({ x: p_val.x, y: p_val.y }));
 
     const Verifier = await ethers.getContractFactory("VerangeVerifier");
-    // Deploying with potentially mismatched arguments as per user's deploy script example structure.
-    // Corrected structure for deploy arguments would be:
-    // verifier = await Verifier.deploy({ x: crs.Q.x, y: crs.Q.y }, H_struct_array_for_deploy);
-    // Forcing user's original style for now, which includes Gx, Gy not in actual constructor:
-    const flattedH_for_deploy = crs.H.flatMap((p_val) => [p_val.x, p_val.y]); // Renamed p to p_val
-    verifier = await Verifier.deploy(
-        1, // Gx - Not in actual Solidity constructor
-        2, // Gy - Not in actual Solidity constructor
-        crs.Q.x, // Q.x - Constructor expects Point struct for Q
-        crs.Q.y, // Q.y
-        flattedH_for_deploy // flattedH - Constructor expects Point[] struct array for H
-    );
+    verifier = await Verifier.deploy({ x: crs.Q.x, y: crs.Q.y }, H_struct_array_for_deploy);
     await verifier.waitForDeployment();
 
     proofData = JSON.parse(fs.readFileSync("scripts/example_proof.json", "utf8"));
@@ -42,8 +24,6 @@ describe("VeRange — single proof", () => {
   }
 
   it("accepts a valid proof", async () => {
-    // For prf.W and prf.T (Point[] in Solidity), direct flatPts might be incorrect.
-    // Should be an array of Point structs: formatPointArrayForSolidity(proofData.W_points)
     const W_formatted = formatPointArrayForSolidity(proofData.W_points);
     const T_formatted = formatPointArrayForSolidity(proofData.T_points);
 
@@ -68,8 +48,6 @@ describe("VeRange — single proof", () => {
     const W_formatted = formatPointArrayForSolidity(proofData.W_points);
     const T_formatted = formatPointArrayForSolidity(proofData.T_points);
 
-    // User instruction: { /* same as above, but eta2: badEta */ ... }
-    // I will fill this explicitly for clarity.
     const ok = await verifier.verifyVeRange(
       { x: proofData.commitmentCmOmega.x, y: proofData.commitmentCmOmega.y },
       {
