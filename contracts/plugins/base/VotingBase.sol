@@ -32,11 +32,28 @@ contract VotingBase {
         candidates = _cand;
     }
 
+    /* ---------- Registration (Public) ---------- */
+    /**
+     * @notice Allows any user to register themselves as a voter during the registration phase.
+     */
+    function register()
+        external inPhase(Phase.Register)
+    {
+        require(msg.sender != admin, "ADMIN_CANNOT_REGISTER");
+        require(!isVoter[msg.sender], "DUP_REGISTRATION"); // Check if already registered
+        isVoter[msg.sender] = true;
+        emit VoterRegistered(msg.sender);
+    }
+
     /* ---------- Admin Methods ---------- */
+    /**
+     * @notice Allows admin to add a specific voter during the registration phase.
+     * @param voter The address of the voter to add.
+     */
     function addVoter(address voter)
         external onlyAdmin inPhase(Phase.Register)
     {
-        require(!isVoter[voter], "DUP");
+        require(!isVoter[voter], "DUP_VOTER_ADMIN"); // Differentiated error message
         isVoter[voter] = true;
         emit VoterRegistered(voter);
     }

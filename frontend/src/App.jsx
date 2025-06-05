@@ -1,9 +1,8 @@
 import React from 'react';
-import { WagmiConfig, createConfig, configureChains, mainnet } from 'wagmi';
+import { WagmiConfig, createConfig, configureChains } from 'wagmi';
 import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
 import { MetaMaskConnector } from 'wagmi/connectors/metaMask';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { CONTRACT_OWNER } from './config/contracts';
 import Registration from './components/Registration';
 import Voting from './components/Voting';
 import AdminPanel from './components/AdminPanel';
@@ -62,7 +61,6 @@ function App() {
         <div className="App">
           <header className="App-header">
             <h1>區塊鏈投票系統</h1>
-            <ContractOwnerInfo />
           </header>
           <main>
             <div className="container">
@@ -80,14 +78,6 @@ function App() {
         </div>
       </QueryClientProvider>
     </WagmiConfig>
-  );
-}
-
-function ContractOwnerInfo() {
-  return (
-    <div className="contract-owner-info">
-      <p>合約擁有者: {CONTRACT_OWNER}</p>
-    </div>
   );
 }
 
